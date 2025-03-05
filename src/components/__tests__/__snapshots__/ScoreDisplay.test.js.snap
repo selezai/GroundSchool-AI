@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ScoreDisplay Component formats time correctly 1`] = `null`;
+
+exports[`ScoreDisplay Component handles perfect score 1`] = `null`;
+
+exports[`ScoreDisplay Component handles zero score 1`] = `null`;
+
+exports[`ScoreDisplay Component renders correctly for failing score 1`] = `null`;
+
+exports[`ScoreDisplay Component renders correctly for passing score 1`] = `null`;
+
+exports[`ScoreDisplay Component renders with custom pass threshold 1`] = `null`;

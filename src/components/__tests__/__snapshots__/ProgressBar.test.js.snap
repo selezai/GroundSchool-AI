@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ProgressBar Component renders correctly at 0% 1`] = `null`;
+
+exports[`ProgressBar Component renders correctly at 100% 1`] = `null`;
+
+exports[`ProgressBar Component renders correctly with default props 1`] = `null`;
+
+exports[`ProgressBar Component renders without percentage text when showPercentage is false 1`] = `null`;

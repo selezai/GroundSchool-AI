@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`QuestionCard Component renders correctly with default props 1`] = `null`;
+
+exports[`QuestionCard Component renders with different categories 1`] = `null`;
+
+exports[`QuestionCard Component renders with different categories 2`] = `null`;
+
+exports[`QuestionCard Component renders with different categories 3`] = `null`;
+
+exports[`QuestionCard Component renders with different difficulty levels 1`] = `null`;
+
+exports[`QuestionCard Component renders with different difficulty levels 2`] = `null`;
+
+exports[`QuestionCard Component renders with different difficulty levels 3`] = `null`;
+
+exports[`QuestionCard Component renders with long question text 1`] = `null`;
