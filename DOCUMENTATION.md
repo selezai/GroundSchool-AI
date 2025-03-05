@@ -5,6 +5,7 @@ This document maintains a record of key decisions, implementation details, and a
 ## Table of Contents
 - [Project Overview](#project-overview)
 - [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
 - [Testing Strategy](#testing-strategy)
 - [Key Components](#key-components)
 - [Development History](#development-history)
@@ -13,10 +14,10 @@ This document maintains a record of key decisions, implementation details, and a
 GroundSchool-AI is an AI-powered aviation study app for pilots preparing for SACAA exams. The application provides interactive question-answer sessions, progress tracking, and personalized study recommendations.
 
 ## Tech Stack
-- **Framework**: React Native with Expo
+- **Framework**: React Native with Expo SDK 52
 - **State Management**: Zustand
 - **Styling**: StyleSheet (React Native built-in)
-- **Navigation**: React Navigation
+- **Navigation**: Expo Router v3
 - **Storage**: AsyncStorage
 - **API Communication**: Axios
 - **Icons**: Expo Vector Icons
@@ -65,7 +66,60 @@ GroundSchool-AI is an AI-powered aviation study app for pilots preparing for SAC
 - **ProgressBar**: Visual indicator of progress through a quiz or course
 - **ScoreDisplay**: Component showing quiz results and statistics
 
+## Architecture
+
+### Routing Structure
+The application uses Expo Router v3, which implements file-based routing similar to Next.js:
+
+```
+app/
+├─ _layout.js         # Root layout with initialization and authentication check
+├─ index.js           # Home screen (dashboard)
+├─ upload.js          # Document upload screen
+├─ quiz.js            # Quiz screen
+├─ quiz-results.js    # Quiz results screen
+├─ recent-activity.js # Recent activity history screen
+├─ profile.js         # User profile and settings screen
+├─ auth/
+│  ├─ _layout.js      # Authentication layout
+│  ├─ login.js        # Login screen
+│  └─ signup.js       # Registration screen
+```
+
+### Authentication Flow
+- Users can log in with email/password or as a guest
+- Authentication state is stored in AsyncStorage
+- Protected routes redirect unauthenticated users to login
+- Token-based authentication with JWT implementation
+
+### Theme System
+- Dark mode by default with aviation-inspired colors
+- Primary color palette:
+  - Background: Navy blue (#0A0F24)
+  - Accent color: Neon blue-green (#00FFCC)
+  - Text: White (#FFFFFF) and light gray (#E2E8F0)
+  - UI elements: Various opacity levels of white
+
+### State Management
+- Local component state for UI interactions
+- Zustand for global application state
+- AsyncStorage for persistent data
+
 ## Development History
+
+### March 6, 2025: Expo SDK 52 Migration
+- Migrated project from older Expo SDK to the latest SDK 52
+- Updated package.json with latest dependencies and configurations
+- Implemented new Expo Router v3 navigation system
+- Created a new file-based routing structure
+- Updated app.json with Expo 52 configuration
+- Key tasks completed:
+  - Created root layout with authentication flow
+  - Implemented new auth screens (login, signup)
+  - Migrated and enhanced existing screens
+  - Added new screens: recent activity, profile
+  - Maintained dark mode theme and branding
+  - Implemented comprehensive error handling
 
 ### March 5, 2025 (Evening): Dependency and Environment Fixes
 - Updated package.json to use Expo SDK 47 which is compatible with Node.js v16

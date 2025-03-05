@@ -64,20 +64,20 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   primary: {
-    backgroundColor: '#3182CE', // Aviation blue
+    backgroundColor: '#00FFCC', // Neon blue-green accent color
     borderWidth: 0,
   },
   secondary: {
-    backgroundColor: '#718096', // Cool gray
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Semi-transparent white
     borderWidth: 0,
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#3182CE',
+    borderColor: '#00FFCC',
   },
   danger: {
-    backgroundColor: '#E53E3E', // Red
+    backgroundColor: '#FF6B6B', // Red with better contrast on dark background
     borderWidth: 0,
   },
   small: {
@@ -103,13 +103,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   primaryText: {
-    color: '#FFFFFF',
+    color: '#0A0F24', // Dark background color for contrast
+    fontWeight: 'bold',
   },
   secondaryText: {
     color: '#FFFFFF',
   },
   outlineText: {
-    color: '#3182CE',
+    color: '#00FFCC',
   },
   dangerText: {
     color: '#FFFFFF',
