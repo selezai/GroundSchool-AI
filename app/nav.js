@@ -1,13 +1,18 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Tabs, usePathname } from 'expo-router';
+import { Tabs } from 'expo-router';
+import { useRouter, useNavigation } from './router-adapter';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePathname } from 'expo-router';
 
 // Custom Tab Bar component
 function CustomTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const pathname = usePathname();
+  
+  // In Router v3, we can use usePathname() more reliably
   
   // Define tab items with their routes and icons
   const tabItems = [
@@ -26,7 +31,12 @@ function CustomTabBar({ state, navigation }) {
         const isFocused = pathname === item.route;
         
         const onPress = () => {
-          navigation.navigate(item.name);
+          // Use our router adapter for consistent navigation
+          if (router) {
+            router.navigate(item.route);
+          } else if (navigation) {
+            navigation.navigate(item.name);
+          }
         };
         
         return (

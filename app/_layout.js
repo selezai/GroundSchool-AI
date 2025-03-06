@@ -1,4 +1,6 @@
-import { Stack, Slot, useRouter, useSegments } from 'expo-router';
+import { useSegments } from 'expo-router';
+import { useRouter } from './router-adapter';
+import { RouterComponents } from './router-adapter';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
@@ -112,7 +114,7 @@ function Auth() {
   }
 
   // Return the children components with the authentication setup complete
-  return <Slot />;
+  return <Slot />; // Use the Slot directly from expo-router
 }
 
 export default function RootLayout() {
@@ -125,3 +127,9 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+// Add screenOptions for stack navigator compatibility in Router v3
+export const screenOptions = {
+  headerShown: false,
+  contentStyle: { backgroundColor: '#0A0F24' }
+};
