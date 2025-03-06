@@ -1,4 +1,4 @@
-import { useSegments } from 'expo-router';
+import { useSegments, Slot } from 'expo-router';
 import { useRouter } from './router-adapter';
 import { RouterComponents } from './router-adapter';
 import { StatusBar } from 'expo-status-bar';

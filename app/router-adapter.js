@@ -83,3 +83,14 @@ export const createLink = (path, params = {}) => {
   const queryString = queryParams.toString();
   return queryString ? `${path}?${queryString}` : path;
 };
+
+// Default export of the adapter for Expo Router v4 compatibility
+const RouterAdapter = {
+  useRouter,
+  useNavigation,
+  useParams,
+  createLink,
+  RouterComponents
+};
+
+export default RouterAdapter;
