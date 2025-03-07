@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   ScrollView, 
-  TouchableOpacity 
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,6 +14,7 @@ import ScoreDisplay from '../src/components/ScoreDisplay';
 import Button from '../src/components/Button';
 import AppHeader from '../src/components/AppHeader';
 import { useTheme } from '../src/context/ThemeContext';
+import { quizService } from '../src/services';
 
 export default function QuizResultsScreen() {
   // Get score data from route params
@@ -21,6 +24,31 @@ export default function QuizResultsScreen() {
   const score = parseFloat(params.score || "0");
   const total = parseInt(params.total || "0");
   const correct = parseInt(params.correct || "0");
+  const quizId = params.quizId;
+  
+  const [quizData, setQuizData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Load the full quiz data if quizId is provided
+  useEffect(() => {
+    const loadQuizData = async () => {
+      if (!quizId) return;
+      
+      try {
+        setLoading(true);
+        const data = await quizService.getQuiz(quizId);
+        setQuizData(data);
+      } catch (err) {
+        console.error('Error loading quiz data:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadQuizData();
+  }, [quizId]);
   
   // Define styles within the component to use theme colors
   const styles = StyleSheet.create({
@@ -143,13 +171,21 @@ export default function QuizResultsScreen() {
           <Button
             title="Review Questions and Answers"
             onPress={() => {
-              // In a full implementation, this would navigate to a detailed review
-              // where users can see which questions they got right/wrong
+              if (quizId) {
+                router.push({
+                  pathname: '/quiz-review',
+                  params: { quizId }
+                });
+              } else {
+                // If no quizId, just show message
+                Alert.alert('Not Available', 'Question review is not available for this quiz.');
+              }
             }}
             variant="primary"
             size="large"
             style={styles.button}
             testID="quiz-results-review-btn"
+            disabled={!quizId || loading}
           />
           
           <Button

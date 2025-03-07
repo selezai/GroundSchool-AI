@@ -2,8 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import Constants from 'expo-constants';
 
-// Get API configuration from environment variables
-const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || 'https://api.groundschool-ai.com/v1';
+// Get API configuration from environment variables or use defaults
+const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || process.env.SUPABASE_URL || 'https://jqkzgtytsaphudyidcxk.supabase.co/rest/v1';
+const SUPABASE_KEY = Constants.expoConfig?.extra?.supabaseKey || process.env.SUPABASE_KEY;
+
+// Validate essential configuration
+if (!SUPABASE_KEY) {
+  console.warn('Warning: SUPABASE_KEY not configured. API requests will likely fail.');
+}
 
 /**
  * API Client for making authenticated requests to the backend
@@ -20,9 +26,11 @@ class ApiClient {
       // Get auth token from storage
       const token = await AsyncStorage.getItem('userToken');
       
-      // Set up headers with authentication
+      // Set up headers with Supabase authentication
       const headers = {
         'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Prefer': 'return=representation',
         ...options.headers,
       };
       
@@ -30,6 +38,9 @@ class ApiClient {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
+      
+      // Always include the Supabase key for unauthenticated access
+      headers['apikey'] = SUPABASE_KEY;
       
       // Prepare request URL and options
       const url = `${API_BASE_URL}${endpoint}`;
@@ -122,7 +133,7 @@ class ApiClient {
   }
   
   /**
-   * Upload a file with form data
+   * Upload a file with form data - This method is now optimized for Supabase storage
    * @param {string} endpoint - API endpoint
    * @param {Object} file - File object with uri, name, and type
    * @param {Object} additionalData - Additional form data to include
@@ -133,6 +144,68 @@ class ApiClient {
       // Get auth token
       const token = await AsyncStorage.getItem('userToken');
       
+      // For file uploads to Supabase Storage, we need to use the Storage API
+      // If this endpoint is for storage, restructure this request accordingly
+      if (endpoint.includes('/storage/') || endpoint.includes('/documents/process')) {
+        // Generate a file name with timestamp to avoid conflicts
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        // For Supabase storage, we need to convert the file to a blob
+        console.log(`Converting file to blob: ${file.name}`);
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        
+        // Construct the storage URL
+        const bucket = endpoint.includes('documents') ? 'documents' : 'default';
+        const storageUrl = `${API_BASE_URL.replace('/rest/v1', '/storage/v1')}/object/${bucket}/${fileName}`;
+        
+        console.log(`Uploading to Supabase Storage: ${storageUrl}`);
+        
+        // Set up headers with Supabase authentication
+        const headers = {
+          'Content-Type': file.type,
+          'apikey': SUPABASE_KEY,
+          'x-upsert': 'true' // Handle existing files
+        };
+        
+        // Add auth token if available
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Make the request directly to Supabase Storage
+        const uploadResponse = await fetch(storageUrl, {
+          method: 'POST',
+          body: blob,
+          headers,
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          console.error('Storage upload error:', errorData);
+          throw new Error(errorData.message || `Storage API Error: ${uploadResponse.status}`);
+        }
+        
+        // Get the public URL for the uploaded file
+        const publicUrl = `${API_BASE_URL.replace('/rest/v1', '/storage/v1')}/object/public/${bucket}/${fileName}`;
+        
+        // Return formatted response with file info and metadata
+        return {
+          document: {
+            id: additionalData.id || Date.now().toString(),
+            title: file.name.replace(`.${fileExt}`, ''),
+            fileName: fileName,
+            fileType: file.type,
+            fileSize: file.size || 0,
+            url: publicUrl,
+            createdAt: new Date().toISOString(),
+            metadata: additionalData
+          }
+        };
+      }
+      
+      // For regular API endpoints, use standard form data approach
       // Create form data
       const formData = new FormData();
       
@@ -148,9 +221,11 @@ class ApiClient {
         formData.append(key, additionalData[key]);
       });
       
-      // Set up headers with authentication
+      // Set up headers with Supabase authentication
       const headers = {
         'Content-Type': 'multipart/form-data',
+        'apikey': SUPABASE_KEY,
+        'Prefer': 'return=representation',
       };
       
       // Add auth token if available
