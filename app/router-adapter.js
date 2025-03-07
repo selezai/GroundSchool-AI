@@ -51,12 +51,27 @@ export const useRouter = () => {
   };
 };
 
-// Export layout components for different router versions
+// Export layout components for different router versions with gesture support
 export const RouterComponents = {
   // For all router versions
   Slot,
-  // For v2/v3/v4
-  Stack
+  // For v2/v3/v4 with gesture navigation enabled
+  Stack: {
+    ...Stack,
+    Screen: {
+      ...Stack.Screen,
+      defaultProps: {
+        ...Stack.Screen?.defaultProps,
+        options: {
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          animationEnabled: true,
+          animation: 'slide_from_right',
+          customAnimationOnGesture: true
+        }
+      }
+    }
+  }
 };
 
 // Navigation adapter

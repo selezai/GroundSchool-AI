@@ -114,13 +114,13 @@ export default function UploadScreen() {
     },
     modalContainer: {
       flex: 1,
-      backgroundColor: '#0A0F24',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
     },
     modalContent: {
-      width: '100%',
+      width: '80%',
       backgroundColor: '#1A2138',
       borderRadius: 12,
       padding: 20,
@@ -291,11 +291,15 @@ export default function UploadScreen() {
           {/* File Source Selection Modal */}
           <Modal
             visible={showPickerOptions}
-            transparent={false}
-            animationType="slide"
+            transparent={true}
+            animationType="fade"
             onRequestClose={() => setShowPickerOptions(false)}
           >
-            <View style={styles.modalContainer}>
+            <TouchableOpacity 
+              style={styles.modalContainer}
+              activeOpacity={1}
+              onPress={() => setShowPickerOptions(false)}
+            >
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Select File From</Text>
                 
@@ -322,7 +326,7 @@ export default function UploadScreen() {
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           </Modal>
         </View>
         

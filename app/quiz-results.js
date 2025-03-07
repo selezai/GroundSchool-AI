@@ -79,15 +79,7 @@ export default function QuizResultsScreen() {
     button: {
       marginBottom: 12,
     },
-    reviewLink: {
-      alignItems: 'center',
-      padding: 16,
-    },
-    reviewLinkText: {
-      color: colors.primary,
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
+
   });
   
 
@@ -149,12 +141,15 @@ export default function QuizResultsScreen() {
         
         <View style={styles.buttonContainer}>
           <Button
-            title="Return to Home"
-            onPress={() => router.replace('/')}
+            title="Review Questions and Answers"
+            onPress={() => {
+              // In a full implementation, this would navigate to a detailed review
+              // where users can see which questions they got right/wrong
+            }}
             variant="primary"
             size="large"
             style={styles.button}
-            testID="quiz-results-home-btn"
+            testID="quiz-results-review-btn"
           />
           
           <Button
@@ -165,20 +160,16 @@ export default function QuizResultsScreen() {
             style={styles.button}
             testID="quiz-results-retry-btn"
           />
+          
+          <Button
+            title="Return to Home"
+            onPress={() => router.replace('/')}
+            variant="outline"
+            size="large"
+            style={styles.button}
+            testID="quiz-results-home-btn"
+          />
         </View>
-        
-        <TouchableOpacity 
-          style={styles.reviewLink}
-          onPress={() => {
-            // In a full implementation, this would navigate to a detailed review
-            // where users can see which questions they got right/wrong
-          }}
-          testID="quiz-results-review-link"
-        >
-          <Text style={styles.reviewLinkText}>
-            Review Questions and Answers
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

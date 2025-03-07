@@ -43,13 +43,15 @@ function CustomDrawerContent(props) {
 
   const activeRoute = getActiveRouteName();
 
-  // Render direct to the screen with no margin
+  // Render direct to the screen with absolutely no margin
   return (
-    <>
-      {/* HEADER - hard-coded with no margins */}
+    <View style={{ flex: 1, paddingTop: 0, marginTop: 0 }}>
+      {/* HEADER - hard-coded with no margins, directly at top */}
       <View style={{
         backgroundColor: '#0A0F24',
         padding: 16,
+        paddingTop: 0,
+        marginTop: 0,
         alignItems: 'center',
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.1)',
@@ -183,7 +185,7 @@ function CustomDrawerContent(props) {
           marginTop: 4,
         }}>groundschoolai@gmail.com</Text>
       </View>
-    </>
+    </View>
   );
 }
 
@@ -245,18 +247,28 @@ export default function DrawerLayout() {
           width: 280,
           padding: 0,
           margin: 0,
+          paddingTop: 0,
+          marginTop: 0,
         },
         // These options override React Navigation's default container styling
         drawerContentOptions: {
           contentContainerStyle: {
             padding: 0,
             margin: 0,
+            paddingTop: 0,
+            marginTop: 0,
           },
         },
-        // Forcing zero spacing
+        // Forcing zero spacing everywhere
         sceneContainerStyle: {
           padding: 0,
           margin: 0,
+          paddingTop: 0,
+          marginTop: 0,
+        },
+        drawerContentStyle: {
+          paddingTop: 0,
+          marginTop: 0,
         },
         headerLeft: ({ tintColor }) => {
           const navigation = useNavigation();

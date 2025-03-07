@@ -1,4 +1,4 @@
-import { useSegments, Slot } from 'expo-router';
+import { useSegments, Stack, Slot } from 'expo-router';
 import { useRouter } from './router-adapter';
 import { RouterComponents } from './router-adapter';
 import { StatusBar } from 'expo-status-bar';
@@ -183,11 +183,25 @@ function Auth() {
     );
   }
 
-  // Return the Slot for all routes - authentication will be handled in useEffect
-  return <Slot />;
+  // Using a simple Stack with native gesture handling
+  return (
+    <Stack
+      initialRouteName="index"
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#0A0F24' },
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        animation: 'default',
+        animationEnabled: true
+      }}
+    />
+  );
 }
 
 export default function RootLayout() {
+
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -227,5 +241,13 @@ export default function RootLayout() {
 // Add screenOptions for stack navigator compatibility in Router v3
 export const screenOptions = {
   headerShown: false,
-  contentStyle: { backgroundColor: '#0A0F24' }
+  contentStyle: { backgroundColor: '#0A0F24' },
+  // Enable swipe to go back on screens with back arrow
+  gestureEnabled: true,
+  gestureDirection: 'horizontal',
+  animation: 'slide_from_right',
+  animationDuration: 300,
+  presentation: 'card',
+  animationTypeForReplace: 'push',
+  fullScreenGestureEnabled: true
 };

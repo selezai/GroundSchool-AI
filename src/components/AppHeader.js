@@ -14,10 +14,27 @@ import {
 import { usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// We'll use the built-in navigation gestures instead of custom PanGestureHandler
 
 const AppHeader = ({ title = 'GroundSchool-AI', withBack = false }) => {
+  const navigation = useNavigation();
+  
+  // Enable swipe back gesture for screens with back buttons
+  useEffect(() => {
+    if (withBack && navigation) {
+      // Configure the screen for gesture navigation
+      navigation.setOptions({
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        animation: 'default',
+        animationEnabled: true,
+        presentation: 'card',
+        fullScreenGestureEnabled: true
+      });
+    }
+  }, [withBack, navigation]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState(null);
   const [logoLoaded, setLogoLoaded] = useState(false);
