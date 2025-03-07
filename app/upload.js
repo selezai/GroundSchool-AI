@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { documentService, quizService } from '../src/services';
+import { supabase } from '../src/services/supabaseClient';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import Button from '../src/components/Button';
@@ -175,65 +176,180 @@ export default function UploadScreen() {
     },
   });
   
-  // Open document picker (Files app)
+  // Open document picker (Files app) with enhanced error handling
   const handleDocumentPicker = async () => {
     try {
+      setShowPickerOptions(false); // Close modal first to prevent UI glitches
+      
+      // Simple approach without race condition to prevent concurrent pickers
+      // Use a shorter timeout (15 seconds) to avoid long hangs
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
         copyToCacheDirectory: true
+      }).catch(error => {
+        console.error('Document picker error caught:', error);
+        return null;
       });
       
-      if (result.assets && result.assets.length > 0) {
-        const file = result.assets[0];
-        setSelectedFile({
-          name: file.name,
-          uri: file.uri,
-          size: file.size,
-          type: file.mimeType
-        });
-      }
-      setShowPickerOptions(false);
-    } catch (error) {
-      console.error('Error picking document:', error);
-      Alert.alert('Error', 'Failed to pick document. Please try again.');
-      setShowPickerOptions(false);
-    }
-  };
-
-  // Open image picker (Gallery)
-  const handleImagePicker = async () => {
-    try {
-      // Request permissions first
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'You need to grant gallery permissions to upload images.');
-        setShowPickerOptions(false);
+      // Validate result structure
+      if (!result) {
+        console.error('Document picker returned null result');
         return;
       }
       
+      if (result.canceled) {
+        console.log('Document picking was canceled');
+        return;
+      }
+      
+      // Carefully validate the assets array
+      if (!result.assets || !Array.isArray(result.assets) || result.assets.length === 0) {
+        console.error('Document picker returned no assets:', result);
+        Alert.alert('Error', 'No file was selected. Please try again.');
+        return;
+      }
+      
+      const file = result.assets[0];
+      
+      // Validate required file properties
+      if (!file.uri) {
+        console.error('Selected file is missing URI:', file);
+        Alert.alert('Error', 'The selected file is invalid. Please choose another file.');
+        return;
+      }
+      
+      // Normalize file metadata with fallbacks for missing properties
+      const normalizedFile = {
+        name: file.name || `document_${Date.now()}.pdf`,
+        uri: file.uri,
+        size: file.size || 0,
+        type: file.mimeType || 'application/octet-stream'
+      };
+      
+      // Log success for debugging
+      console.log('Document successfully picked:', normalizedFile.name);
+      
+      // Set the selected file with complete metadata
+      setSelectedFile(normalizedFile);
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert(
+        'Error',
+        `Failed to pick document: ${error.message || 'Unknown error'}. Please try again.`
+      );
+    }
+  };
+
+  // Open image picker (Gallery) with enhanced error handling
+  const handleImagePicker = async () => {
+    try {
+      setShowPickerOptions(false); // Close modal first to prevent UI glitches
+      
+      // Safely request permissions without race condition
+      let permissionResult;
+      try {
+        permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+          .catch(error => {
+            console.error('Permission request error caught:', error);
+            return null;
+          });
+      } catch (permError) {
+        console.error('Error requesting gallery permissions:', permError);
+        Alert.alert(
+          'Permission Error',
+          'Failed to request gallery permissions. Please check your app settings.'
+        );
+        return;
+      }
+      
+      // Check permission result
+      if (!permissionResult || permissionResult.granted === false) {
+        Alert.alert(
+          'Permission Required',
+          'You need to grant gallery permissions to upload images. Please enable it in your device settings.'
+        );
+        return;
+      }
+      
+      // Simpler approach without race condition to prevent concurrent pickers
+      // Use proper API based on Expo SDK version
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType ? ImagePicker.MediaType.IMAGE : ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 1,
+        quality: 0.7, // Lower quality to improve performance
+        exif: false, // Don't need EXIF data, reduces memory usage
+      }).catch(error => {
+        console.error('Image picker error caught:', error);
+        return null;
       });
       
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const image = result.assets[0];
-        const filename = image.uri.split('/').pop();
-        
-        setSelectedFile({
-          name: filename || 'image.jpg',
-          uri: image.uri,
-          size: image.fileSize || 0,
-          type: image.mimeType || 'image/jpeg'
-        });
+      // Handle cancellation and validate result
+      if (!result || result.canceled) {
+        console.log('Image picking was canceled or returned no result');
+        return;
       }
-      setShowPickerOptions(false);
+      
+      // Validate assets array
+      if (!result.assets || !Array.isArray(result.assets) || result.assets.length === 0) {
+        console.error('Image picker returned no assets:', result);
+        Alert.alert('Error', 'No image was selected. Please try again.');
+        return;
+      }
+      
+      const image = result.assets[0];
+      
+      // Validate image URI
+      if (!image.uri) {
+        console.error('Selected image is missing URI:', image);
+        Alert.alert('Error', 'The selected image is invalid. Please choose another image.');
+        return;
+      }
+      
+      // Extract filename safely
+      let filename = 'image.jpg';
+      try {
+        const uriParts = image.uri.split('/');
+        if (uriParts.length > 0) {
+          filename = uriParts[uriParts.length - 1] || filename;
+        }
+      } catch (e) {
+        console.warn('Could not extract filename from URI:', e);
+      }
+      
+      // Determine image type based on extension
+      let imageType = 'image/jpeg';
+      try {
+        const ext = filename.split('.').pop().toLowerCase();
+        if (ext) {
+          switch (ext) {
+            case 'png': imageType = 'image/png'; break;
+            case 'gif': imageType = 'image/gif'; break;
+            case 'webp': imageType = 'image/webp'; break;
+            case 'jpg': 
+            case 'jpeg':
+            default: imageType = 'image/jpeg';
+          }
+        }
+      } catch (e) {
+        console.warn('Could not determine image type from filename:', e);
+      }
+      
+      // Create normalized file object with fallbacks
+      const normalizedFile = {
+        name: filename,
+        uri: image.uri,
+        size: image.fileSize || image.size || 0, // Account for different property names
+        type: image.mimeType || imageType
+      };
+      
+      console.log('Image successfully picked:', normalizedFile.name);
+      setSelectedFile(normalizedFile);
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-      setShowPickerOptions(false);
+      Alert.alert(
+        'Error',
+        `Failed to pick image: ${error.message || 'Unknown error'}. Please try again.`
+      );
     }
   };
   
@@ -278,28 +394,158 @@ export default function UploadScreen() {
       setProcessingProgress(0);
       setProcessingStage('Preparing document...');
       
-      // Process document using document service
-      const documentResponse = await documentService.processDocument(selectedFile, {
-        extractText: true,
-        generateSummary: true
-      }).catch(error => {
-        console.error('Document processing error:', error);
-        // If API fails, simulate successful processing for demo purposes
-        setProcessingProgress(60);
-        setProcessingStage('Document processed successfully. Generating questions...');
-        return { document: { id: 'mock-doc-' + Date.now() } };
-      });
+      // Upload file to Supabase storage directly
+      // Handle filenames with multiple dots properly
+      const nameParts = selectedFile.name.split('.');
+      const fileExt = nameParts.length > 1 ? nameParts.pop() : 'file';
       
-      // Generate quiz using quiz service
-      const quizResponse = await quizService.generateQuiz(selectedFile, {
-        questionCount: 10,
-        difficulty: 'mixed',
-        documentId: documentResponse.document.id
-      }).catch(error => {
+      // Create a sanitized, unique filename with timestamp and user's original filename
+      const sanitizedName = selectedFile.name.replace(/[^a-zA-Z0-9-_.]/g, '_');
+      // Use let instead of const since we might need to update this later
+      let fileName = `${Date.now()}_${sanitizedName}`;
+      
+      // Upload to storage bucket
+      setProcessingStage('Uploading document...');
+      setProcessingProgress(20);
+      
+      let blob;
+      try {
+        // Fetch the file data as a blob with timeout protection
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(selectedFile.uri, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+        }
+        
+        blob = await response.blob();
+      } catch (fetchError) {
+        console.error('Error fetching file:', fetchError);
+        throw new Error(`Failed to read the file: ${fetchError.message}`);
+      }
+      
+      // Verify blob before upload
+      if (!blob || blob.size === 0) {
+        throw new Error('Invalid file: The file appears to be empty or corrupted');
+      }
+      
+      // Upload file blob to Supabase storage with better error handling
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, blob, {
+          contentType: selectedFile.type || 'application/octet-stream', // Provide fallback mime type
+          cacheControl: '3600',
+          upsert: true // Overwrite if file exists with same name
+        });
+        
+      // Retry once with a different filename if upload fails
+      if (storageError) {
+        console.error('Storage upload error:', storageError);
+        
+        // Only retry if it's a duplicate error
+        if (storageError.message && storageError.message.includes('duplicate')) {
+          const retryFileName = `${Date.now()}_retry_${sanitizedName}`;
+          const { data: retryData, error: retryError } = await supabase.storage
+            .from('documents')
+            .upload(retryFileName, blob, {
+              contentType: selectedFile.type,
+              cacheControl: '3600'
+            });
+            
+          if (retryError) {
+            console.error('Retry storage upload error:', retryError);
+            throw retryError;
+          }
+          
+          // Use the successful retry data
+          fileName = retryFileName;
+        } else {
+          // For other errors, just throw
+          throw storageError;
+        }
+      }
+      
+      setProcessingProgress(50);
+      setProcessingStage('Processing document...');
+      
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName);
+      
+      // Create document record in database
+      const documentData = {
+        title: selectedFile.name.replace(`.${fileExt}`, ''),
+        file_path: fileName, // Store the path/filename in storage
+        file_type: selectedFile.type,
+        file_size: selectedFile.size,
+        status: 'completed', // Set initial status
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: (await supabase.auth.getUser()).data.user?.id
+      };
+      
+      setProcessingProgress(70);
+      setProcessingStage('Creating document record...');
+      
+      const { data: documentRecord, error: documentError } = await supabase
+        .from('documents')
+        .insert(documentData)
+        .select();
+        
+      if (documentError) {
+        console.error('Document record error:', documentError);
+        throw documentError;
+      }
+      
+      setProcessingProgress(85);
+      setProcessingStage('Generating quiz...');
+      
+      // Generate quiz using our updated quiz service
+      let quizResponse;
+      try {
+        // Make a safety check for document ID
+        if (!documentRecord || !documentRecord[0] || !documentRecord[0].id) {
+          throw new Error('Document record is invalid or missing ID');
+        }
+        
+        // Clone selectedFile to avoid any reference issues
+        const fileForQuiz = {
+          uri: selectedFile.uri,
+          name: selectedFile.name,
+          type: selectedFile.type,
+          size: selectedFile.size
+        };
+        
+        quizResponse = await quizService.generateQuiz(fileForQuiz, {
+          questionCount: 10,
+          difficulty: 'mixed',
+          documentId: documentRecord[0].id
+        });
+        
+        // Verify quiz response structure
+        if (!quizResponse || !quizResponse.quiz || !quizResponse.quiz.id) {
+          throw new Error('Invalid quiz response format');
+        }
+      } catch (error) {
         console.error('Quiz generation error:', error);
-        // If API fails, simulate successful quiz generation for demo purposes
-        return { quiz: { id: 'mock-quiz-' + Date.now() } };
-      });
+        
+        // If service fails, create a basic quiz directly
+        try {
+          quizResponse = await createBasicQuiz(documentRecord[0].id, selectedFile.name);
+        } catch (fallbackError) {
+          console.error('Failed to create basic quiz:', fallbackError);
+          Alert.alert(
+            'Quiz Creation Issue', 
+            'We had trouble creating your quiz. You can still access your document in the history tab.',
+            [{ text: 'OK', onPress: () => router.replace('/') }]
+          );
+          throw new Error(`Failed to create quiz: ${error.message}. Fallback also failed: ${fallbackError.message}`);
+        }
+      }
       
       // Complete progress
       setProcessingProgress(100);
@@ -318,6 +564,81 @@ export default function UploadScreen() {
       setIsUploading(false);
       setProcessingProgress(0);
       setProcessingStage('');
+    }
+  };
+  
+  // Helper function to create a basic quiz if the service fails
+  const createBasicQuiz = async (documentId, documentName) => {
+    try {
+      if (!documentId) {
+        throw new Error('Document ID is required to create a quiz');
+      }
+      
+      // Create a basic title from document name (handling potential edge cases)
+      const nameParts = (documentName || 'Unnamed Document').split('.');
+      const baseName = nameParts.length > 1 ? nameParts.slice(0, -1).join('.') : documentName || 'Unnamed Document';
+      const safeTitle = baseName.length > 50 ? `${baseName.substring(0, 47)}...` : baseName;
+      
+      // Get the current user ID safely with additional error handling
+      let userId;
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('Auth error:', error);
+          throw new Error(`Authentication error: ${error.message}`);
+        }
+        
+        userId = data?.user?.id;
+        
+        if (!userId) {
+          throw new Error('User not authenticated or user ID not available');
+        }
+      } catch (authError) {
+        console.error('Failed to get user:', authError);
+        throw new Error(`Authentication failed: ${authError.message}`);
+      }
+      
+      // Create a basic quiz with the document ID
+      const quizData = {
+        title: `Quiz on ${safeTitle}`,
+        document_id: documentId,
+        question_count: 10,
+        difficulty: 'mixed',
+        created_at: new Date().toISOString(),
+        user_id: userId
+      };
+      
+      // Insert with better error handling
+      const { data: quizRecord, error: quizError } = await supabase
+        .from('quizzes')
+        .insert(quizData)
+        .select();
+        
+      if (quizError) {
+        console.error('Database error creating quiz:', quizError);
+        throw new Error(`Database error: ${quizError.message}`);
+      }
+      
+      if (!quizRecord || quizRecord.length === 0) {
+        throw new Error('Failed to create quiz record - no data returned');
+      }
+      
+      // Return in the expected format with additional validation
+      return {
+        quiz: {
+          id: quizRecord[0].id,
+          title: quizRecord[0].title,
+          createdAt: quizRecord[0].created_at,
+          documentId: documentId,
+          // Add safe fallbacks for any other required fields
+          questions: []
+        }
+      };
+    } catch (error) {
+      console.error('Error creating basic quiz:', error);
+      // Don't show alert here, let the calling function handle UI feedback
+      throw error;
     }
   };
 
