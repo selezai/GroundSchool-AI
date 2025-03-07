@@ -12,6 +12,7 @@ import {
   Alert,
   Image
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -47,11 +48,19 @@ export default function LoginScreen() {
         name: email.split('@')[0], // Extract name from email for demo
       };
       
-      // Store user token
-      await AsyncStorage.setItem('userToken', 'sample-auth-token');
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      // Store user token - explicitly using string for token (SDK 52 compatibility)
+      const token = 'sample-auth-token';
+      console.log('Setting user token:', token);
       
-      // Navigate to main app
+      // Use direct Promise.all for concurrent storage operations
+      await Promise.all([
+        AsyncStorage.setItem('userToken', token),
+        AsyncStorage.setItem('userData', JSON.stringify(userData))
+      ]);
+      
+      console.log('Login successful, navigating to home...');
+      
+      // Navigate to main app - use direct navigation without timeout
       router.replace('/');
       
     } catch (error) {
@@ -62,6 +71,20 @@ export default function LoginScreen() {
     }
   };
 
+  // Handle forgot password
+  const handleForgotPassword = () => {
+    if (!email) {
+      Alert.alert('Email Required', 'Please enter your email address first.');
+      return;
+    }
+    
+    Alert.alert(
+      'Reset Password',
+      `A password reset link would be sent to ${email} in a real app.`,
+      [{ text: 'OK' }]
+    );
+  };
+  
   // Handle guest login
   const handleGuestLogin = async () => {
     try {
@@ -75,11 +98,19 @@ export default function LoginScreen() {
         isGuest: true,
       };
       
-      // Store guest token
-      await AsyncStorage.setItem('userToken', 'guest-token');
-      await AsyncStorage.setItem('userData', JSON.stringify(guestUser));
+      // Store guest token - explicitly using string for token (SDK 52 compatibility)
+      const token = 'guest-token';
+      console.log('Setting guest token:', token);
       
-      // Navigate to main app
+      // Use direct Promise.all for concurrent storage operations
+      await Promise.all([
+        AsyncStorage.setItem('userToken', token),
+        AsyncStorage.setItem('userData', JSON.stringify(guestUser))
+      ]);
+      
+      console.log('Guest login successful, navigating to home...');
+      
+      // Navigate to main app directly without timeout
       router.replace('/');
       
     } catch (error) {
@@ -100,8 +131,8 @@ export default function LoginScreen() {
           <View style={styles.inner}>
             <View style={styles.header}>
               <Image 
-                source={require('../../assets/logo.png')} 
-                style={styles.logo}
+                source={require('../../assets/logo.png')}
+                style={styles.logoOnly}
                 resizeMode="contain"
               />
               <Text style={styles.subtitle}>
@@ -139,6 +170,7 @@ export default function LoginScreen() {
               
               <TouchableOpacity 
                 style={styles.forgotPassword}
+                onPress={handleForgotPassword}
                 testID="login-screen-forgot-password-btn"
               >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -162,6 +194,29 @@ export default function LoginScreen() {
               >
                 <Text style={styles.guestButtonText}>Continue as Guest</Text>
               </TouchableOpacity>
+              
+              <View style={styles.socialLoginContainer}>
+                <Text style={styles.socialLoginText}>Or sign in with</Text>
+                <View style={styles.socialButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.socialButton}
+                    testID="login-screen-google-btn"
+                    onPress={() => Alert.alert('Info', 'Google login would be implemented in a real app')}
+                  >
+                    <Ionicons name="logo-google" size={20} color="#FFFFFF" style={styles.socialIcon} />
+                    <Text style={styles.socialButtonText}>Google</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.socialButton}
+                    testID="login-screen-apple-btn"
+                    onPress={() => Alert.alert('Info', 'Apple login would be implemented in a real app')}
+                  >
+                    <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
+                    <Text style={styles.socialButtonText}>Apple</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
             
             <View style={styles.footer}>
@@ -198,9 +253,15 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 40,
   },
-  logo: {
-    width: 200,
+  logoOnly: {
+    width: 80,
     height: 80,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   subtitle: {
@@ -263,5 +324,37 @@ const styles = StyleSheet.create({
     color: '#00FFCC',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  socialLoginContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  socialLoginText: {
+    color: '#8896AB',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  socialButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  socialButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialIcon: {
+    marginRight: 8,
+  },
+  socialButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

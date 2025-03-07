@@ -7,25 +7,90 @@ import {
   TouchableOpacity 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import ScoreDisplay from '../src/components/ScoreDisplay';
 import Button from '../src/components/Button';
+import AppHeader from '../src/components/AppHeader';
+import { useTheme } from '../src/context/ThemeContext';
 
 export default function QuizResultsScreen() {
   // Get score data from route params
   const params = useLocalSearchParams();
+  const { colors } = useTheme();
   
   const score = parseFloat(params.score || "0");
   const total = parseInt(params.total || "0");
   const correct = parseInt(params.correct || "0");
-  const timeSpent = parseInt(params.timeSpent || "0");
   
-  // Format time spent
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
+  // Define styles within the component to use theme colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 20,
+    },
+    resultCard: {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: 12,
+      padding: 20,
+      marginBottom: 24,
+    },
+    resultTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    resultRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    resultLabel: {
+      fontSize: 16,
+      color: '#E2E8F0',
+    },
+    resultValue: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: 'bold',
+    },
+    feedbackContainer: {
+      marginTop: 16,
+      padding: 12,
+      backgroundColor: 'rgba(0, 255, 204, 0.1)',
+      borderRadius: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+    },
+    feedbackText: {
+      fontSize: 16,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    buttonContainer: {
+      marginBottom: 20,
+    },
+    button: {
+      marginBottom: 12,
+    },
+    reviewLink: {
+      alignItems: 'center',
+      padding: 16,
+    },
+    reviewLinkText: {
+      color: colors.primary,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });
+  
+
   
   // Get performance message based on score
   const getPerformanceMessage = (score) => {
@@ -47,15 +112,13 @@ export default function QuizResultsScreen() {
   
   return (
     <SafeAreaView style={styles.container} testID="quiz-results-screen">
-      <Stack.Screen 
-        options={{
-          title: 'Quiz Results',
-          headerLeft: () => null, // Disable back button
-        }} 
-      />
+      <AppHeader title="Quiz Results" withBack={false} />
       
       <ScrollView contentContainerStyle={styles.content}>
-        <ScoreDisplay score={score} />
+        <ScoreDisplay
+          correct={correct}
+          total={total}
+        />
         
         <View style={styles.resultCard}>
           <Text style={styles.resultTitle}>Performance Summary</Text>
@@ -70,10 +133,7 @@ export default function QuizResultsScreen() {
             <Text style={styles.resultValue}>{accuracy.toFixed(1)}%</Text>
           </View>
           
-          <View style={styles.resultRow}>
-            <Text style={styles.resultLabel}>Time Spent:</Text>
-            <Text style={styles.resultValue}>{formatTime(timeSpent)}</Text>
-          </View>
+
           
           <View style={styles.resultRow}>
             <Text style={styles.resultLabel}>Skipped Questions:</Text>
@@ -124,69 +184,4 @@ export default function QuizResultsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0F24',
-  },
-  content: {
-    padding: 20,
-  },
-  resultCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  resultRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  resultLabel: {
-    fontSize: 16,
-    color: '#E2E8F0',
-  },
-  resultValue: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  feedbackContainer: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: 'rgba(0, 255, 204, 0.1)',
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#00FFCC',
-  },
-  feedbackText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    lineHeight: 22,
-  },
-  buttonContainer: {
-    marginBottom: 20,
-  },
-  button: {
-    marginBottom: 12,
-  },
-  reviewLink: {
-    alignItems: 'center',
-    padding: 16,
-  },
-  reviewLinkText: {
-    color: '#00FFCC',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+// Styles moved inside the component to access theme colors

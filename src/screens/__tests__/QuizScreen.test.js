@@ -55,11 +55,6 @@ describe('QuizScreen Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
   });
 
   it('renders correctly with default props', () => {

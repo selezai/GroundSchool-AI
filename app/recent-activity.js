@@ -7,7 +7,9 @@ import {
   TouchableOpacity 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
+import AppHeader from '../src/components/AppHeader';
+import { useTheme } from '../src/context/ThemeContext';
 
 // Mock data for recent activity
 const mockActivity = [
@@ -46,6 +48,120 @@ const mockActivity = [
 ];
 
 export default function RecentActivityScreen() {
+  const { colors } = useTheme();
+  
+  // Define styles within the component to use theme colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      padding: 16,
+    },
+    activityCard: {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+    },
+    activityHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    activityTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text,
+      flex: 1,
+    },
+    activityDate: {
+      fontSize: 14,
+      color: '#E2E8F0',
+      marginLeft: 8,
+    },
+    activityDetails: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    scoreContainer: {
+      flex: 1,
+    },
+    scoreLabel: {
+      fontSize: 14,
+      color: '#E2E8F0',
+      marginBottom: 4,
+    },
+    scoreValue: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    goodScore: {
+      color: '#4CAF50',
+    },
+    badScore: {
+      color: '#F44336',
+    },
+    questionsContainer: {
+      alignItems: 'flex-end',
+    },
+    questionsLabel: {
+      fontSize: 14,
+      color: '#E2E8F0',
+      marginBottom: 4,
+    },
+    questionsValue: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    incompleteContainer: {
+      flex: 1,
+    },
+    incompleteText: {
+      fontSize: 14,
+      color: '#F59E0B',
+      fontWeight: 'bold',
+      marginBottom: 4,
+    },
+    continueText: {
+      fontSize: 14,
+      color: '#E2E8F0',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    emptyMessage: {
+      fontSize: 16,
+      color: '#E2E8F0',
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    startButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+    },
+    startButtonText: {
+      color: '#0A0F24',
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+  });
   const renderActivityItem = ({ item }) => {
     // Format date for display
     const date = new Date(item.date);
@@ -119,11 +235,7 @@ export default function RecentActivityScreen() {
   
   return (
     <SafeAreaView style={styles.container} testID="recent-activity-screen">
-      <Stack.Screen 
-        options={{
-          title: 'Recent Activity',
-        }} 
-      />
+      <AppHeader title="Recent Activity" withBack={true} />
     
       {mockActivity.length > 0 ? (
         <FlatList

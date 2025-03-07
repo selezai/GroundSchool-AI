@@ -1,17 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
 import QuestionCard from '../src/components/QuestionCard';
 import ProgressBar from '../src/components/ProgressBar';
-import Timer from '../src/components/Timer';
 import Button from '../src/components/Button';
+import AppHeader from '../src/components/AppHeader';
+import { useTheme } from '../src/context/ThemeContext';
 
 // Mock questions data (in a real app, this would come from an API)
 const mockQuestions = [
   {
     id: 1,
     question: 'What is the primary purpose of the ailerons on an aircraft?',
+    questionText: 'What is the primary purpose of the ailerons on an aircraft?',
+    questionNumber: 1,
+    category: 'Aircraft Systems',
+    difficulty: 'Medium',
     options: [
       'Control roll movement around the longitudinal axis',
       'Control pitch movement around the lateral axis',
@@ -23,6 +28,10 @@ const mockQuestions = [
   {
     id: 2,
     question: 'Which of the following instruments relies on the pitot-static system?',
+    questionText: 'Which of the following instruments relies on the pitot-static system?',
+    questionNumber: 2,
+    category: 'Instruments',
+    difficulty: 'Medium',
     options: [
       'Turn coordinator',
       'Airspeed indicator',
@@ -34,6 +43,10 @@ const mockQuestions = [
   {
     id: 3,
     question: 'What does ADF stand for in aviation?',
+    questionText: 'What does ADF stand for in aviation?',
+    questionNumber: 3,
+    category: 'Navigation',
+    difficulty: 'Easy',
     options: [
       'Automatic Direction Finder',
       'Aviation Distance Factor',
@@ -45,6 +58,10 @@ const mockQuestions = [
   {
     id: 4,
     question: 'Which meteorological phenomenon represents the greatest hazard to aircraft due to turbulence?',
+    questionText: 'Which meteorological phenomenon represents the greatest hazard to aircraft due to turbulence?',
+    questionNumber: 4,
+    category: 'Meteorology',
+    difficulty: 'Hard',
     options: [
       'Cirrus clouds',
       'Stratus clouds',
@@ -69,19 +86,53 @@ const mockQuestions = [
 export default function QuizScreen() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState({});
-  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes per quiz
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { colors, isDarkMode } = useTheme();
   
   const totalQuestions = mockQuestions.length;
   const currentQuestion = mockQuestions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
   
-  // Handle when time runs out
-  useEffect(() => {
-    if (timeRemaining <= 0) {
-      handleQuizSubmit();
-    }
-  }, [timeRemaining]);
+  // Define styles within the component to use theme colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+    },
+    counterContainer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 8,
+    },
+    counter: {
+      fontSize: 14,
+      color: colors.text,
+      opacity: 0.8,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+    },
+    navigationButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 24,
+    },
+    navigationButton: {
+      flex: 1,
+      marginHorizontal: 8,
+    },
+    submitButtonContainer: {
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+    },
+  });
+  
+
   
   const handleSelectOption = (questionId, optionIndex) => {
     setSelectedOptions({
@@ -147,8 +198,7 @@ export default function QuizScreen() {
         params: {
           score: score.toFixed(1),
           total: totalQuestions,
-          correct: correctAnswers,
-          timeSpent: 300 - timeRemaining
+          correct: correctAnswers
         }
       });
       
@@ -162,12 +212,7 @@ export default function QuizScreen() {
 
   return (
     <SafeAreaView style={styles.container} testID="quiz-screen">
-      <Stack.Screen 
-        options={{
-          title: 'SACAA Practice Quiz',
-          headerBackVisible: false,
-        }} 
-      />
+      <AppHeader title="SACAA Practice Quiz" withBack={true} />
     
       <View style={styles.header}>
         <ProgressBar progress={progress} />
@@ -175,16 +220,15 @@ export default function QuizScreen() {
           <Text style={styles.counter}>
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </Text>
-          <Timer 
-            seconds={timeRemaining} 
-            onTimerUpdate={setTimeRemaining}
-          />
         </View>
       </View>
       
       <ScrollView contentContainerStyle={styles.content}>
         <QuestionCard
-          question={currentQuestion.question}
+          questionNumber={currentQuestion.questionNumber}
+          questionText={currentQuestion.questionText}
+          category={currentQuestion.category}
+          difficulty={currentQuestion.difficulty}
           options={currentQuestion.options}
           selectedOption={selectedOptions[currentQuestion.id]}
           onSelectOption={(optionIndex) => 

@@ -130,11 +130,9 @@ const UploadScreen = ({ testID = 'upload-screen' }) => {
             </View>
           ) : (
             <View style={styles.uploadPlaceholder}>
-              <Image 
-                source={require('../../assets/upload-icon.png')} 
-                style={styles.uploadIcon}
-                resizeMode="contain"
-              />
+              <View style={styles.uploadIconContainer}>
+                <Text style={styles.plusIcon}>+</Text>
+              </View>
               <Text style={styles.uploadText}>Tap to select a file</Text>
               <Button 
                 title="Select File" 
@@ -214,11 +212,20 @@ const styles = StyleSheet.create({
   uploadPlaceholder: {
     alignItems: 'center',
   },
-  uploadIcon: {
+  uploadIconContainer: {
     width: 80,
     height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
-    tintColor: '#00FFCC',
+  },
+  plusIcon: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '200',
   },
   uploadText: {
     fontSize: 16,

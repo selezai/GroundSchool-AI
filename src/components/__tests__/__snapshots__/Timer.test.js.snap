@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Timer Component renders correctly with hours format 1`] = `null`;
-
-exports[`Timer Component renders correctly with minutes and seconds 1`] = `null`;
-
-exports[`Timer Component shows danger color when time is under 1 minute 1`] = `null`;
-
-exports[`Timer Component shows warning color when time is under 5 minutes 1`] = `null`;

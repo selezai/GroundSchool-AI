@@ -101,11 +101,7 @@ export default function SignupScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.header}>
-              <Image
-                source={require('../../assets/logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
+              <Text style={styles.appTitle}>GroundSchool-AI</Text>
               <Text style={styles.title}>Create Account</Text>
               <Text style={styles.subtitle}>
                 Sign up to start your aviation study journey
@@ -219,10 +215,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 30,
   },
-  logo: {
-    width: 180,
-    height: 70,
-    marginBottom: 14,
+  appTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,

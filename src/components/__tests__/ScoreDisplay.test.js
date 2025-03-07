@@ -6,7 +6,6 @@ describe('ScoreDisplay Component', () => {
   const defaultProps = {
     correct: 8,
     total: 10,
-    timeSpent: 600,
   };
 
   it('renders correctly for passing score', () => {
@@ -26,7 +25,6 @@ describe('ScoreDisplay Component', () => {
         <ScoreDisplay 
           correct={6} 
           total={10} 
-          timeSpent={600} 
         />
       ).toJSON();
     });
@@ -46,18 +44,7 @@ describe('ScoreDisplay Component', () => {
     expect(tree).toMatchSnapshot();
   });
 
-  it('formats time correctly', () => {
-    let tree;
-    act(() => {
-      tree = renderer.create(
-        <ScoreDisplay 
-          {...defaultProps} 
-          timeSpent={3665} // 1h 1m 5s
-        />
-      ).toJSON();
-    });
-    expect(tree).toMatchSnapshot();
-  });
+
 
   it('handles perfect score', () => {
     let tree;
@@ -65,8 +52,7 @@ describe('ScoreDisplay Component', () => {
       tree = renderer.create(
         <ScoreDisplay 
           correct={10} 
-          total={10} 
-          timeSpent={300}
+          total={10}
         />
       ).toJSON();
     });
@@ -79,8 +65,7 @@ describe('ScoreDisplay Component', () => {
       tree = renderer.create(
         <ScoreDisplay 
           correct={0} 
-          total={10} 
-          timeSpent={300}
+          total={10}
         />
       ).toJSON();
     });

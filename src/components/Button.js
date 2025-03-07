@@ -93,8 +93,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   disabled: {
-    backgroundColor: '#E2E8F0',
-    borderColor: '#CBD5E0',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   disabledText: {
-    color: '#A0AEC0',
+    color: 'rgba(255, 255, 255, 0.4)',
   }
 });
 

@@ -1,7 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ScoreDisplay Component formats time correctly 1`] = `null`;
-
 exports[`ScoreDisplay Component handles perfect score 1`] = `null`;
 
 exports[`ScoreDisplay Component handles zero score 1`] = `null`;

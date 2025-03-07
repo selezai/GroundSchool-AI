@@ -14,13 +14,17 @@ const QuestionCard = ({
       <View style={styles.header}>
         <Text style={styles.questionNumber}>Question {questionNumber}</Text>
         <View style={styles.metadata}>
-          <Text style={styles.category}>{category}</Text>
-          <Text style={[
-            styles.difficulty,
-            styles[difficulty.toLowerCase()]
-          ]}>
-            {difficulty}
-          </Text>
+          <Text style={styles.category}>{category || 'General'}</Text>
+          {difficulty ? (
+            <Text style={[
+              styles.difficulty,
+              styles[difficulty.toLowerCase() || 'medium']
+            ]}>
+              {difficulty}
+            </Text>
+          ) : (
+            <Text style={[styles.difficulty, styles.medium]}>Medium</Text>
+          )}
         </View>
       </View>
       <Text style={styles.questionText}>{questionText}</Text>
