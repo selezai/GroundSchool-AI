@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import QuestionCard from '../src/components/QuestionCard';
@@ -7,91 +7,76 @@ import ProgressBar from '../src/components/ProgressBar';
 import Button from '../src/components/Button';
 import AppHeader from '../src/components/AppHeader';
 import { useTheme } from '../src/context/ThemeContext';
+import { quizService } from '../src/services';
 
-// Mock questions data (in a real app, this would come from an API)
-const mockQuestions = [
-  {
-    id: 1,
-    question: 'What is the primary purpose of the ailerons on an aircraft?',
-    questionText: 'What is the primary purpose of the ailerons on an aircraft?',
-    questionNumber: 1,
-    category: 'Aircraft Systems',
-    difficulty: 'Medium',
-    options: [
-      'Control roll movement around the longitudinal axis',
-      'Control pitch movement around the lateral axis',
-      'Control yaw movement around the vertical axis',
-      'Reduce drag during high-speed flight'
-    ],
-    correctAnswer: 0,
-  },
-  {
-    id: 2,
-    question: 'Which of the following instruments relies on the pitot-static system?',
-    questionText: 'Which of the following instruments relies on the pitot-static system?',
-    questionNumber: 2,
-    category: 'Instruments',
-    difficulty: 'Medium',
-    options: [
-      'Turn coordinator',
-      'Airspeed indicator',
-      'Magnetic compass',
-      'Tachometer'
-    ],
-    correctAnswer: 1,
-  },
-  {
-    id: 3,
-    question: 'What does ADF stand for in aviation?',
-    questionText: 'What does ADF stand for in aviation?',
-    questionNumber: 3,
-    category: 'Navigation',
-    difficulty: 'Easy',
-    options: [
-      'Automatic Direction Finder',
-      'Aviation Distance Factor',
-      'Altitude Display Format',
-      'Airborne Display Function'
-    ],
-    correctAnswer: 0,
-  },
-  {
-    id: 4,
-    question: 'Which meteorological phenomenon represents the greatest hazard to aircraft due to turbulence?',
-    questionText: 'Which meteorological phenomenon represents the greatest hazard to aircraft due to turbulence?',
-    questionNumber: 4,
-    category: 'Meteorology',
-    difficulty: 'Hard',
-    options: [
-      'Cirrus clouds',
-      'Stratus clouds',
-      'Cumulonimbus clouds',
-      'Radiation fog'
-    ],
-    correctAnswer: 2,
-  },
-  {
-    id: 5,
-    question: 'What is the standard pressure setting for altimeter calibration at sea level?',
-    options: [
-      '1003 hPa',
-      '1013 hPa',
-      '1023 hPa',
-      '1033 hPa'
-    ],
-    correctAnswer: 1,
-  }
-];
+// Questions will be fetched from the API
 
-export default function QuizScreen() {
+
+export default function QuizScreen({ route }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const { colors, isDarkMode } = useTheme();
   
-  const totalQuestions = mockQuestions.length;
-  const currentQuestion = mockQuestions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+  // Get quizId from route params if available
+  const quizId = route?.params?.quizId;
+  
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentQuestionIndex];
+  const progress = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
+  
+  // Fetch questions from API when component mounts
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        let quizData;
+        if (quizId) {
+          // If quizId is provided, fetch the specific quiz
+          quizData = await quizService.getQuizById(quizId);
+        } else {
+          // Otherwise, get the most recent quiz
+          const quizzes = await quizService.getQuizHistory();
+          if (quizzes && quizzes.length > 0) {
+            quizData = quizzes[0];
+          } else {
+            throw new Error('No quizzes found. Please generate a quiz first.');
+          }
+        }
+        
+        if (quizData && quizData.questions) {
+          // Format questions to match the expected structure
+          const formattedQuestions = quizData.questions.map((q, index) => ({
+            id: q.id || index + 1,
+            question: q.question || q.questionText,
+            questionText: q.questionText || q.question,
+            questionNumber: index + 1,
+            category: q.category || 'General',
+            difficulty: q.difficulty || 'Medium',
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            reference: q.reference || '',
+          }));
+          
+          setQuestions(formattedQuestions);
+        } else {
+          throw new Error('No questions found in the quiz data');
+        }
+      } catch (err) {
+        console.error('Error fetching questions:', err);
+        setError(err.message || 'Failed to load questions. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchQuestions();
+  }, [quizId]);
   
   // Define styles within the component to use theme colors
   const styles = StyleSheet.create({
@@ -129,6 +114,27 @@ export default function QuizScreen() {
     submitButtonContainer: {
       paddingHorizontal: 16,
       paddingBottom: 16,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: colors.text,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    errorText: {
+      fontSize: 16,
+      color: colors.error || '#FF6B6B',
+      textAlign: 'center',
     },
   });
   
@@ -181,16 +187,28 @@ export default function QuizScreen() {
       
       // Calculate results
       let correctAnswers = 0;
-      mockQuestions.forEach(question => {
-        if (selectedOptions[question.id] === question.correctAnswer) {
+      const userAnswers = {};
+      
+      questions.forEach(question => {
+        const selectedOption = selectedOptions[question.id];
+        userAnswers[question.id] = selectedOption;
+        
+        if (selectedOption === question.correctAnswer) {
           correctAnswers++;
         }
       });
       
       const score = (correctAnswers / totalQuestions) * 100;
       
-      // In a real app, we would save results to the server
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save results to the server
+      const quizResult = {
+        quizId: quizId,
+        answers: userAnswers,
+        score: score,
+        completedAt: new Date().toISOString()
+      };
+      
+      await quizService.submitQuizAnswers(quizResult);
       
       // Navigate to results screen with quiz data
       router.push({
@@ -198,10 +216,10 @@ export default function QuizScreen() {
         params: {
           score: score.toFixed(1),
           total: totalQuestions,
-          correct: correctAnswers
+          correct: correctAnswers,
+          quizId: quizId
         }
       });
-      
     } catch (error) {
       console.error('Error submitting quiz:', error);
       Alert.alert('Error', 'Failed to submit quiz. Please try again.');
@@ -210,8 +228,52 @@ export default function QuizScreen() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader title="Quiz" showBackButton />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading questions...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader title="Quiz" showBackButton />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Button 
+            title="Go Back"
+            onPress={() => router.back()}
+            style={{ marginTop: 20 }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  if (questions.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader title="Quiz" showBackButton />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>No questions available. Please generate a quiz first.</Text>
+          <Button 
+            title="Go to Upload"
+            onPress={() => router.push('/upload')}
+            style={{ marginTop: 20 }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   return (
-    <SafeAreaView style={styles.container} testID="quiz-screen">
+    <SafeAreaView style={styles.container}>
       <AppHeader title="SACAA Practice Quiz" withBack={true} />
     
       <View style={styles.header}>
@@ -224,17 +286,19 @@ export default function QuizScreen() {
       </View>
       
       <ScrollView contentContainerStyle={styles.content}>
-        <QuestionCard
-          questionNumber={currentQuestion.questionNumber}
-          questionText={currentQuestion.questionText}
-          category={currentQuestion.category}
-          difficulty={currentQuestion.difficulty}
-          options={currentQuestion.options}
-          selectedOption={selectedOptions[currentQuestion.id]}
-          onSelectOption={(optionIndex) => 
-            handleSelectOption(currentQuestion.id, optionIndex)
-          }
-        />
+        {currentQuestion && (
+          <QuestionCard
+            questionNumber={currentQuestion.questionNumber}
+            questionText={currentQuestion.questionText}
+            category={currentQuestion.category}
+            difficulty={currentQuestion.difficulty}
+            options={currentQuestion.options}
+            selectedOption={selectedOptions[currentQuestion.id]}
+            onSelectOption={(optionIndex) => 
+              handleSelectOption(currentQuestion.id, optionIndex)
+            }
+          />
+        )}
         
         <View style={styles.navigationButtons}>
           <Button
