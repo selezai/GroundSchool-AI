@@ -1,14 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
-import Constants from 'expo-constants';
+import env from '../utils/environment';
 
-// Get API configuration from environment variables or use defaults
-const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || process.env.SUPABASE_URL || 'https://jqkzgtytsaphudyidcxk.supabase.co/rest/v1';
-const SUPABASE_KEY = Constants.expoConfig?.extra?.supabaseKey || process.env.SUPABASE_KEY;
+// Get API configuration from our environment utility
+const API_BASE_URL = env.apiBaseUrl || 'https://jqkzgtytsaphudyidcxk.supabase.co/rest/v1';
+const SUPABASE_KEY = env.supabaseKey;
+const IS_PRODUCTION = env.isProduction;
 
 // Validate essential configuration
 if (!SUPABASE_KEY) {
-  console.warn('Warning: SUPABASE_KEY not configured. API requests will likely fail.');
+  console.error('Critical: SUPABASE_KEY not configured. API requests will fail.');
 }
 
 /**
@@ -261,6 +262,82 @@ class ApiClient {
       return data;
     } catch (error) {
       console.error('File Upload Error:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Send a request to Claude AI for document analysis and question generation
+   * @param {string} documentText - Text content of the document to analyze
+   * @param {Object} options - Options for question generation
+   * @returns {Promise<Array>} - Array of generated questions
+   */
+  async generateQuestionsWithClaude(documentText, options = {}) {
+    try {
+      console.log('Making request to Claude API for question generation');
+      
+      // Get Claude API key from environment
+      const apiKey = env.claudeApiKey;
+      
+      if (!apiKey) {
+        console.error('Claude API key not found');
+        throw new Error('Claude API key not configured');
+      }
+      
+      // Set default options
+      const questionOptions = {
+        questionCount: options.questionCount || 10,
+        difficulty: options.difficulty || 'mixed',
+        model: 'claude-3-haiku-20240307' // Using a faster model for mobile
+      };
+      
+      // Prepare the prompt for Claude
+      const prompt = `You are an aviation exam question generator. Based on the following study material, create ${questionOptions.questionCount} multiple-choice questions that test understanding of key aviation concepts. 
+
+For each question:
+1. Create a clear, specific question about an important concept
+2. Provide 4 answer options (A, B, C, D)
+3. Indicate the correct answer
+4. Include a brief explanation of why the answer is correct
+
+Study material: ${documentText.substring(0, 15000)}`; // Limit text length to avoid token limits
+      
+      // Make direct request to Claude API
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: questionOptions.model,
+          max_tokens: 4000,
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        })
+      });
+      
+      // Parse response
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Extract and return the AI response
+      return {
+        rawResponse: data.content[0].text,
+        model: data.model,
+        usage: data.usage
+      };
+    } catch (error) {
+      console.error('Claude API request error:', error);
       throw error;
     }
   }
