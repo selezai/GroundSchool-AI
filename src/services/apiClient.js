@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import Constants from 'expo-constants';
 import env from '../utils/environment';
 
 // Get API configuration from our environment utility
@@ -274,15 +275,35 @@ class ApiClient {
    */
   async generateQuestionsWithClaude(documentText, options = {}) {
     try {
-      console.log('Making request to Claude API for question generation');
+      console.log('Starting Claude API request for question generation');
+      console.log(`Document text length: ${documentText.length} characters`);
       
-      // Get Claude API key from environment
-      const apiKey = env.claudeApiKey;
+      // Get Claude API key with multiple fallback options
+      let apiKey = env.claudeApiKey;
       
+      // If API key is not in environment, try to get it from AsyncStorage
       if (!apiKey) {
-        console.error('Claude API key not found');
-        throw new Error('Claude API key not configured');
+        console.log('Claude API key not found in environment, trying AsyncStorage');
+        try {
+          apiKey = await AsyncStorage.getItem('claude_api_key');
+        } catch (storageError) {
+          console.warn('Failed to get Claude API key from AsyncStorage:', storageError);
+        }
       }
+      
+      // Try to get from app.json constants directly as a last resort
+      if (!apiKey && Constants.expoConfig?.extra?.claudeApiKey) {
+        console.log('Getting Claude API key from Constants.expoConfig');
+        apiKey = Constants.expoConfig.extra.claudeApiKey;
+      }
+      
+      // Check if we have a valid API key
+      if (!apiKey) {
+        console.error('Claude API key not found in any source');
+        throw new Error('Claude API key not configured. Please check your app configuration.');
+      }
+      
+      console.log('Claude API key found, proceeding with request');
       
       // Set default options
       const questionOptions = {
@@ -290,6 +311,19 @@ class ApiClient {
         difficulty: options.difficulty || 'mixed',
         model: 'claude-3-haiku-20240307' // Using a faster model for mobile
       };
+      
+      // Trim document text to avoid token limits while preserving content
+      // Keep the beginning and end of the document as these often contain key information
+      const MAX_CHARS = 15000;
+      let processedText = documentText;
+      
+      if (documentText.length > MAX_CHARS) {
+        const halfMax = Math.floor(MAX_CHARS / 2);
+        processedText = documentText.substring(0, halfMax) + 
+          '\n[Content trimmed for length...]\n' + 
+          documentText.substring(documentText.length - halfMax);
+        console.log(`Trimmed document text from ${documentText.length} to ${processedText.length} chars`);
+      }
       
       // Prepare the prompt for Claude
       const prompt = `You are an aviation exam question generator. Based on the following study material, create ${questionOptions.questionCount} multiple-choice questions that test understanding of key aviation concepts. 
@@ -300,9 +334,14 @@ For each question:
 3. Indicate the correct answer
 4. Include a brief explanation of why the answer is correct
 
-Study material: ${documentText.substring(0, 15000)}`; // Limit text length to avoid token limits
+Make sure your questions are directly based on the provided study material, not on general aviation knowledge.
+
+Study material: ${processedText}`;
       
-      // Make direct request to Claude API
+      // Make direct request to Claude API with better error handling
+      console.log(`Making request to Claude API with model: ${questionOptions.model}`);
+      
+      const requestStartTime = Date.now();
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -322,13 +361,33 @@ Study material: ${documentText.substring(0, 15000)}`; // Limit text length to av
         })
       });
       
-      // Parse response
+      const requestDuration = Date.now() - requestStartTime;
+      console.log(`Claude API request completed in ${requestDuration / 1000} seconds`);
+      
+      // Parse response with better error handling
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+        let errorMessage = `HTTP error ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = `Claude API error: ${errorData.error?.message || errorMessage}`;
+        } catch (jsonError) {
+          // If we can't parse JSON, just use the HTTP error
+        }
+        
+        console.error(errorMessage);
+        throw new Error(errorMessage);
       }
       
+      // Parse the successful response
       const data = await response.json();
+      console.log('Successfully received Claude API response');
+      
+      // Validate the response format
+      if (!data.content || !data.content[0] || !data.content[0].text) {
+        console.error('Invalid response format from Claude API:', data);
+        throw new Error('Invalid response format from Claude API');
+      }
       
       // Extract and return the AI response
       return {

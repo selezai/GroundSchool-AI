@@ -25,6 +25,19 @@
         "ENVIRONMENT": "preview"
       }
     },
+    "standalone": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "node": "18.20.7",
+      "env": {
+        "ENVIRONMENT": "production"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "ios": {
