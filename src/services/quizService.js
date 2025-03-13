@@ -300,8 +300,8 @@ class QuizService {
         
         console.log('Quiz record created successfully, ID:', quizRecord[0].id);
       
-        // Generate questions using Claude AI
-        console.log('Generating questions using Claude AI for document:', documentId);
+        // Generate questions using DeepSeek AI
+        console.log('Generating questions using DeepSeek AI for document:', documentId);
         
         let response;
         try {

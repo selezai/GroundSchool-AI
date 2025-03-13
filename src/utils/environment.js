@@ -30,8 +30,8 @@ const getEnvironmentSettings = () => {
   const envType = isProductionBuild ? 'production' : 
                 (extra.isPreviewBuild ? 'preview' : 'development');
   
-  // Get the Claude API key, checking multiple potential sources
-  const claudeApiKey = extra.CLAUDE_API_KEY || extra.claudeApiKey || null;
+  // Get the DeepSeek API key, checking multiple potential sources
+  const deepseekApiKey = extra.DEEPSEEK_API_KEY || extra.deepseekApiKey || null;
   
   // Construct and return the environment object
   const env = {
@@ -49,7 +49,7 @@ const getEnvironmentSettings = () => {
     apiBaseUrl: extra.API_BASE_URL || extra.apiBaseUrl || 'https://jqkzgtytsaphudyidcxk.supabase.co/rest/v1',
     supabaseUrl: extra.SUPABASE_URL || extra.supabaseUrl || 'https://jqkzgtytsaphudyidcxk.supabase.co',
     supabaseKey: extra.SUPABASE_KEY || extra.supabaseKey,
-    claudeApiKey: claudeApiKey
+    deepseekApiKey: deepseekApiKey
   };
   
   return env;
@@ -87,14 +87,14 @@ console.log('🚀 Build type:',
 console.log('🔑 API Keys status:', {
   supabaseUrl: env.supabaseUrl ? '✅ Set' : '❌ Missing',
   supabaseKey: env.supabaseKey ? '✅ Set' : '❌ Missing', 
-  claudeApiKey: env.claudeApiKey ? '✅ Set' : '❌ Missing' 
+  deepseekApiKey: env.deepseekApiKey ? '✅ Set' : '❌ Missing' 
 });
 
-// Store the Claude API key in AsyncStorage as a backup in case the environment
+// Store the DeepSeek API key in AsyncStorage as a backup in case the environment
 // variables are not accessible in some parts of the app
-if (env.claudeApiKey) {
-  AsyncStorage.setItem('claude_api_key', env.claudeApiKey)
-    .catch(err => console.warn('Failed to store Claude API key in AsyncStorage:', err));
+if (env.deepseekApiKey) {
+  AsyncStorage.setItem('deepseek_api_key', env.deepseekApiKey)
+    .catch(err => console.warn('Failed to store DeepSeek API key in AsyncStorage:', err));
 }
 
 export default env;

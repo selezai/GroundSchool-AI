@@ -1,6 +1,6 @@
 /**
- * Utility script to verify Claude AI integration
- * This script tests the Claude API connection and question generation
+ * Utility script to verify DeepSeek AI integration
+ * This script tests the DeepSeek API connection and question generation
  */
 
 const apiClient = require('../src/services/apiClient').default;
@@ -22,50 +22,50 @@ Secondary flight controls include flaps, slats, spoilers, and trim systems. Flap
 `;
 
 /**
- * Test Claude AI integration
+ * Test DeepSeek AI integration
  */
-async function testClaudeIntegration() {
-  console.log('Testing Claude AI Integration');
+async function testDeepSeekIntegration() {
+  console.log('Testing DeepSeek AI Integration');
   console.log('============================');
   
   try {
-    // Check if Claude API key is configured
-    const apiKey = env.claudeApiKey;
+    // Check if DeepSeek API key is configured
+    const apiKey = env.deepseekApiKey;
     if (!apiKey) {
-      console.error('❌ Claude API key not found in environment');
-      console.log('Please ensure the Claude API key is properly configured in app.json');
+      console.error('❌ DeepSeek API key not found in environment');
+      console.log('Please ensure the DeepSeek API key is properly configured in app.json');
       return false;
     }
     
-    console.log('✅ Claude API key found');
+    console.log('✅ DeepSeek API key found');
     
-    // Test question generation with Claude
+    // Test question generation with DeepSeek
     console.log('\nTesting question generation...');
-    console.log('This may take a moment as we connect to the Claude API...');
+    console.log('This may take a moment as we connect to the DeepSeek API...');
     
-    const result = await apiClient.generateQuestionsWithClaude(SAMPLE_TEXT, {
+    const result = await apiClient.generateQuestionsWithDeepSeek(SAMPLE_TEXT, {
       questionCount: 2 // Just generate 2 questions for the test
     });
     
     if (!result || !result.rawResponse) {
-      console.error('❌ Failed to get response from Claude API');
+      console.error('❌ Failed to get response from DeepSeek API');
       return false;
     }
     
-    console.log('✅ Successfully received response from Claude API');
+    console.log('✅ Successfully received response from DeepSeek API');
     console.log(`Model used: ${result.model}`);
     console.log(`Response length: ${result.rawResponse.length} characters`);
     
     // Parse the first 200 characters to verify content
     const previewText = result.rawResponse.substring(0, 200);
-    console.log('\nPreview of Claude response:');
+    console.log('\nPreview of DeepSeek response:');
     console.log('---------------------------');
     console.log(previewText + '...');
     
-    console.log('\n✅ Claude AI integration is working properly!');
+    console.log('\n✅ DeepSeek AI integration is working properly!');
     return true;
   } catch (error) {
-    console.error('❌ Claude AI integration test failed:', error.message);
+    console.error('❌ DeepSeek AI integration test failed:', error.message);
     console.error('Error details:', error);
     return false;
   }
@@ -73,10 +73,10 @@ async function testClaudeIntegration() {
 
 // Run the test if executed directly
 if (require.main === module) {
-  testClaudeIntegration()
+  testDeepSeekIntegration()
     .then(success => {
       if (success) {
-        console.log('\nAll tests passed! Your Claude AI integration is working properly.');
+        console.log('\nAll tests passed! Your DeepSeek AI integration is working properly.');
       } else {
         console.log('\nSome tests failed. Please check the error messages above.');
       }
@@ -87,4 +87,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { testClaudeIntegration };
+module.exports = { testDeepSeekIntegration };

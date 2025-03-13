@@ -268,48 +268,48 @@ class ApiClient {
   }
   
   /**
-   * Send a request to Claude AI for document analysis and question generation
+   * Send a request to DeepSeek AI for document analysis and question generation
    * @param {string} documentText - Text content of the document to analyze
    * @param {Object} options - Options for question generation
    * @returns {Promise<Array>} - Array of generated questions
    */
-  async generateQuestionsWithClaude(documentText, options = {}) {
+  async generateQuestionsWithDeepSeek(documentText, options = {}) {
     try {
-      console.log('Starting Claude API request for question generation');
+      console.log('Starting DeepSeek API request for question generation');
       console.log(`Document text length: ${documentText.length} characters`);
       
-      // Get Claude API key with multiple fallback options
-      let apiKey = env.claudeApiKey;
+      // Get DeepSeek API key with multiple fallback options
+      let apiKey = env.deepseekApiKey;
       
       // If API key is not in environment, try to get it from AsyncStorage
       if (!apiKey) {
-        console.log('Claude API key not found in environment, trying AsyncStorage');
+        console.log('DeepSeek API key not found in environment, trying AsyncStorage');
         try {
-          apiKey = await AsyncStorage.getItem('claude_api_key');
+          apiKey = await AsyncStorage.getItem('deepseek_api_key');
         } catch (storageError) {
-          console.warn('Failed to get Claude API key from AsyncStorage:', storageError);
+          console.warn('Failed to get DeepSeek API key from AsyncStorage:', storageError);
         }
       }
       
       // Try to get from app.json constants directly as a last resort
-      if (!apiKey && Constants.expoConfig?.extra?.claudeApiKey) {
-        console.log('Getting Claude API key from Constants.expoConfig');
-        apiKey = Constants.expoConfig.extra.claudeApiKey;
+      if (!apiKey && Constants.expoConfig?.extra?.deepseekApiKey) {
+        console.log('Getting DeepSeek API key from Constants.expoConfig');
+        apiKey = Constants.expoConfig.extra.deepseekApiKey;
       }
       
       // Check if we have a valid API key
       if (!apiKey) {
-        console.error('Claude API key not found in any source');
-        throw new Error('Claude API key not configured. Please check your app configuration.');
+        console.error('DeepSeek API key not found in any source');
+        throw new Error('DeepSeek API key not configured. Please check your app configuration.');
       }
       
-      console.log('Claude API key found, proceeding with request');
+      console.log('DeepSeek API key found, proceeding with request');
       
       // Set default options
       const questionOptions = {
         questionCount: options.questionCount || 10,
         difficulty: options.difficulty || 'mixed',
-        model: 'claude-3-haiku-20240307' // Using a faster model for mobile
+        model: 'deepseek-chat' // DeepSeek Chat model
       };
       
       // Trim document text to avoid token limits while preserving content
@@ -325,7 +325,7 @@ class ApiClient {
         console.log(`Trimmed document text from ${documentText.length} to ${processedText.length} chars`);
       }
       
-      // Prepare the prompt for Claude
+      // Prepare the prompt for DeepSeek
       const prompt = `You are an aviation exam question generator. Based on the following study material, create ${questionOptions.questionCount} multiple-choice questions that test understanding of key aviation concepts. 
 
 For each question:
@@ -338,16 +338,15 @@ Make sure your questions are directly based on the provided study material, not 
 
 Study material: ${processedText}`;
       
-      // Make direct request to Claude API with better error handling
-      console.log(`Making request to Claude API with model: ${questionOptions.model}`);
+      // Make direct request to DeepSeek API with better error handling
+      console.log(`Making request to DeepSeek API with model: ${questionOptions.model}`);
       
       const requestStartTime = Date.now();
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01'
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: questionOptions.model,
@@ -362,7 +361,7 @@ Study material: ${processedText}`;
       });
       
       const requestDuration = Date.now() - requestStartTime;
-      console.log(`Claude API request completed in ${requestDuration / 1000} seconds`);
+      console.log(`DeepSeek API request completed in ${requestDuration / 1000} seconds`);
       
       // Parse response with better error handling
       if (!response.ok) {
@@ -370,7 +369,7 @@ Study material: ${processedText}`;
         
         try {
           const errorData = await response.json();
-          errorMessage = `Claude API error: ${errorData.error?.message || errorMessage}`;
+          errorMessage = `DeepSeek API error: ${errorData.error?.message || errorMessage}`;
         } catch (jsonError) {
           // If we can't parse JSON, just use the HTTP error
         }
@@ -381,22 +380,22 @@ Study material: ${processedText}`;
       
       // Parse the successful response
       const data = await response.json();
-      console.log('Successfully received Claude API response');
+      console.log('Successfully received DeepSeek API response');
       
       // Validate the response format
-      if (!data.content || !data.content[0] || !data.content[0].text) {
-        console.error('Invalid response format from Claude API:', data);
-        throw new Error('Invalid response format from Claude API');
+      if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+        console.error('Invalid response format from DeepSeek API:', data);
+        throw new Error('Invalid response format from DeepSeek API');
       }
       
       // Extract and return the AI response
       return {
-        rawResponse: data.content[0].text,
+        rawResponse: data.choices[0].message.content,
         model: data.model,
         usage: data.usage
       };
     } catch (error) {
-      console.error('Claude API request error:', error);
+      console.error('DeepSeek API request error:', error);
       throw error;
     }
   }

@@ -200,12 +200,19 @@ app/
 - Removed the Timer component from the QuizScreen as timed quizzes are no longer required
 - Updated the AI provider from DeepSeek R1 to Claude (free version) for question generation
 
-### March 13, 2025: Claude AI Integration and Standalone Build
+### March 13, 2025 (Afternoon): Migrated from Claude to DeepSeek AI
+- Replaced Claude AI with DeepSeek AI for aviation quiz generation
+- Updated all API client code to work with DeepSeek's API format and authentication
+- Created test scripts to verify DeepSeek API connectivity
+- Migrated configuration keys and environment variables
+- Preserved all functionality while using the new AI provider
+
+### March 13, 2025 (Morning): Claude AI Integration and Standalone Build
 - Integrated Claude AI for aviation quiz generation within the app
 - Added a standalone build configuration to the EAS build settings
 - Created utility scripts for building and testing:
   - `build-standalone.sh`: Automates the standalone APK build process
-  - `verify-claude-integration.js`: Tests the Claude AI integration
+  - `check-deepseek-api.js`: Tests the DeepSeek API integration
 - Updated app.json configuration for standalone builds:
   - Modified updates configuration to enable fallback to cache
   - Added automatic update checking
@@ -213,7 +220,7 @@ app/
 - Added expo-system-ui plugin for proper UI styling in standalone builds
 - Implemented comprehensive error handling for API requests
 - Ensured the app can operate without a development server connection
-- Secured the Claude API key in the app configuration
+- Secured the DeepSeek API key in the app configuration
 - Updated test files to match component changes
 
 ### March 5, 2025 (Afternoon): Dependency and Environment Fixes

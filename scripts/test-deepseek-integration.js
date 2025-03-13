@@ -1,12 +1,12 @@
 /**
- * Test script for verifying Claude AI integration in standalone builds
+ * Test script for verifying DeepSeek AI integration in standalone builds
  * 
  * This script tests:
  * 1. Environment variable access (API keys)
- * 2. Claude API connectivity
+ * 2. DeepSeek API connectivity
  * 3. Question generation functionality
  * 
- * Usage: npx expo run:web -- scripts/test-claude-integration.js
+ * Usage: npx expo run:web -- scripts/test-deepseek-integration.js
  * 
  * Note: This script can be run in an Expo environment to simulate
  * the standalone build environment's behavior with API keys.
@@ -16,19 +16,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import env from '../src/utils/environment';
 
-// This is a simplified version of the apiClient.generateQuestionsWithClaude method
-async function testClaudeIntegration() {
-  console.log('\n=== Claude AI Integration Test ===\n');
+// This is a simplified version of the apiClient.generateQuestionsWithDeepSeek method
+async function testDeepSeekIntegration() {
+  console.log('\n=== DeepSeek AI Integration Test ===\n');
   
   // Step 1: Test environment variable access
   console.log('1. Testing environment variables...');
   await testEnvironmentVariables();
   
-  // Step 2: Test Claude API connectivity
-  console.log('\n2. Testing Claude API connectivity...');
-  const apiKey = await getClaudeApiKey();
+  // Step 2: Test DeepSeek API connectivity
+  console.log('\n2. Testing DeepSeek API connectivity...');
+  const apiKey = await getDeepSeekApiKey();
   if (!apiKey) {
-    console.error('❌ Failed to get Claude API key from any source');
+    console.error('❌ Failed to get DeepSeek API key from any source');
     return;
   }
   

@@ -1,5 +1,5 @@
 /**
- * Simple Node.js script to verify Claude API connectivity
+ * Simple Node.js script to verify DeepSeek API connectivity
  * This script doesn't require Expo/React Native dependencies
  */
 
@@ -7,16 +7,16 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-// Read app.json to extract Claude API key
-function getClaudeApiKey() {
+// Read app.json to extract DeepSeek API key
+function getDeepSeekApiKey() {
   try {
     const appJsonPath = path.join(__dirname, '..', 'app.json');
     const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
     
     // Try to get the API key from various potential locations in app.json
     const apiKey = 
-      appJson.expo?.extra?.claudeApiKey || 
-      appJson.expo?.extra?.CLAUDE_API_KEY;
+      appJson.expo?.extra?.deepseekApiKey || 
+      appJson.expo?.extra?.DEEPSEEK_API_KEY;
     
     return apiKey;
   } catch (error) {
@@ -25,28 +25,27 @@ function getClaudeApiKey() {
   }
 }
 
-// Simple function to make a request to the Claude API
-function testClaudeApi(apiKey) {
+// Simple function to make a request to the DeepSeek API
+function testDeepSeekApi(apiKey) {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
+      hostname: 'api.deepseek.com',
+      path: '/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${apiKey}`
       }
     };
 
     // Create a minimal test message
     const data = JSON.stringify({
-      model: 'claude-3-haiku-20240307',
+      model: 'deepseek-chat',
       max_tokens: 100,
       messages: [
         {
           role: "user",
-          content: "Hello Claude! Please respond with a single word: 'Working'"
+          content: "Hello DeepSeek! Please respond with a single word: 'Working'"
         }
       ]
     });
@@ -64,7 +63,7 @@ function testClaudeApi(apiKey) {
             const parsedData = JSON.parse(responseData);
             resolve({
               success: true,
-              content: parsedData.content?.[0]?.text || 'No content returned',
+              content: parsedData.choices?.[0]?.message?.content || 'No content returned',
               model: parsedData.model
             });
           } catch (e) {
@@ -93,42 +92,42 @@ function testClaudeApi(apiKey) {
 }
 
 async function main() {
-  console.log('\n=== Claude API Configuration Test ===\n');
+  console.log('\n=== DeepSeek API Configuration Test ===\n');
   
   // Step 1: Get the API key
-  const apiKey = getClaudeApiKey();
+  const apiKey = getDeepSeekApiKey();
   
   if (!apiKey) {
-    console.error('❌ Claude API key not found in app.json');
+    console.error('❌ DeepSeek API key not found in app.json');
     console.log('\nPossible issues:');
     console.log('1. The API key may not be properly set in app.json');
     console.log('2. The API key may be under a different property name');
-    console.log('\nPlease check your app.json file and ensure the Claude API key is correctly configured.');
+    console.log('\nPlease check your app.json file and ensure the DeepSeek API key is correctly configured.');
     return;
   }
   
-  console.log('✅ Found Claude API key in app.json');
+  console.log('✅ Found DeepSeek API key in app.json');
   console.log(`API Key (masked): ${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}`);
   
   // Step 2: Test the API connection
-  console.log('\nTesting connection to Claude API...');
+  console.log('\nTesting connection to DeepSeek API...');
   
   try {
-    const result = await testClaudeApi(apiKey);
-    console.log('✅ Successfully connected to Claude API!');
+    const result = await testDeepSeekApi(apiKey);
+    console.log('✅ Successfully connected to DeepSeek API!');
     console.log(`Model used: ${result.model}`);
     console.log(`Response: "${result.content.trim()}"`);
   } catch (error) {
-    console.error(`❌ Claude API test failed: ${error.message}`);
+    console.error(`❌ DeepSeek API test failed: ${error.message}`);
     console.log('\nPossible issues:');
     console.log('1. The API key may be invalid or expired');
     console.log('2. There may be network connectivity issues');
-    console.log('3. Claude API service may be experiencing downtime');
+    console.log('3. DeepSeek API service may be experiencing downtime');
     return;
   }
   
   console.log('\n=== Test Complete ===');
-  console.log('The Claude API is properly configured and functional.');
+  console.log('The DeepSeek API is properly configured and functional.');
 }
 
 // Run the test
