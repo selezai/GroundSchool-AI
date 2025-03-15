@@ -1,0 +1,65 @@
+Here are 5 multiple-choice questions based on the provided study material:
+
+---
+
+### Question 1:  
+**What is the primary function of ailerons in an aircraft's flight control system?**  
+A. To control pitch around the lateral axis  
+B. To control roll around the longitudinal axis  
+C. To control yaw around the vertical axis  
+D. To improve lift during takeoff and landing  
+
+**Correct Answer:** B  
+**Explanation:** Ailerons are primary flight controls that control roll, which is the movement of the aircraft around its longitudinal axis.  
+
+---
+
+### Question 2:  
+**Which of the following is NOT a primary flight control?**  
+A. Ailerons  
+B. Elevators  
+C. Rudder  
+D. Flaps  
+
+**Correct Answer:** D  
+**Explanation:** Flaps are secondary flight controls used to improve aircraft performance, while ailerons, elevators, and rudder are primary flight controls.  
+
+---
+
+### Question 3:  
+**What is the primary purpose of secondary flight controls?**  
+A. To control the aircraft's basic movements (roll, pitch, and yaw)  
+B. To improve performance characteristics or relieve excessive control forces  
+C. To replace primary flight controls in case of failure  
+D. To provide navigation assistance  
+
+**Correct Answer:** B  
+**Explanation:** Secondary flight controls, such as flaps, slats, spoilers, and trim systems, are used to enhance performance or reduce control forces, not to control basic movements.  
+
+---
+
+### Question 4:  
+**Which secondary flight control is used to increase lift during takeoff and landing?**  
+A. Spoilers  
+B. Trim systems  
+C. Flaps  
+D. Rudder  
+
+**Correct Answer:** C  
+**Explanation:** Flaps are secondary flight controls that extend to increase the wing's surface area, thereby increasing lift during takeoff and landing.  
+
+---
+
+### Question 5:  
+**What axis does the rudder control movement around?**  
+A. Longitudinal axis  
+B. Lateral axis  
+C. Vertical axis  
+D. Horizontal axis  
+
+**Correct Answer:** C  
+**Explanation:** The rudder is a primary flight control that controls yaw, which is the movement of the aircraft around its vertical axis.  
+
+--- 
+
+These questions test the understanding of primary and secondary flight controls and their specific functions as outlined in the study material.

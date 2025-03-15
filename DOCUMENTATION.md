@@ -207,6 +207,19 @@ app/
 - Migrated configuration keys and environment variables
 - Preserved all functionality while using the new AI provider
 
+### March 15, 2025: DeepSeek API Integration Enhancement
+- Enhanced the prompt used for DeepSeek API to ensure questions are strictly based on provided study material
+- Improved question quality by adding specific instructions for content relevance and format
+- Enhanced the question parsing logic to handle multiple DeepSeek response formats (markdown, numbered lists, etc.)
+- Improved error logging and diagnostic information for question generation
+- Created comprehensive test scripts to verify the entire integration pipeline:
+  - `test-deepseek-direct.js`: Tests direct API connectivity
+  - `test-deepseek-node.js`: Tests complete question generation and parsing
+- Added detailed debug logging throughout the question generation process
+- Marked Claude API as deprecated in environment files
+- Updated environment.js to correctly retrieve the DeepSeek API key and store it in AsyncStorage
+- Successfully validated that the generated questions are now highly specific to the provided document content
+
 ### March 13, 2025 (Morning): Claude AI Integration and Standalone Build
 - Integrated Claude AI for aviation quiz generation within the app
 - Added a standalone build configuration to the EAS build settings

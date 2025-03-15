@@ -326,17 +326,26 @@ class ApiClient {
       }
       
       // Prepare the prompt for DeepSeek
-      const prompt = `You are an aviation exam question generator. Based on the following study material, create ${questionOptions.questionCount} multiple-choice questions that test understanding of key aviation concepts. 
+      const prompt = `You are an aviation exam question generator. Your ONLY task is to create ${questionOptions.questionCount} multiple-choice questions STRICTLY based on the study material provided below.
+
+IMPORTANT RULES:
+1. ONLY create questions about specific information contained in the study material
+2. DO NOT create generic aviation questions not covered in the material
+3. Each question must directly reference concepts, facts, or procedures from the text
+4. If the study material is insufficient, create fewer high-quality specific questions instead of generic ones
 
 For each question:
-1. Create a clear, specific question about an important concept
-2. Provide 4 answer options (A, B, C, D)
-3. Indicate the correct answer
+1. Create a clear, specific question about an important concept from the material
+2. Provide 4 answer options labeled (A, B, C, D)
+3. Clearly indicate the correct answer with "Correct answer: [letter]"
 4. Include a brief explanation of why the answer is correct
 
-Make sure your questions are directly based on the provided study material, not on general aviation knowledge.
+Format each question with a clear question number, the question text, options A-D, correct answer, and explanation.
 
-Study material: ${processedText}`;
+STUDY MATERIAL:
+${processedText}
+
+Remember: Quality over quantity. Only create questions directly answerable from the provided study material.`;
       
       // Make direct request to DeepSeek API with better error handling
       console.log(`Making request to DeepSeek API with model: ${questionOptions.model}`);

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q-1742079832901-0",
+    "text": "What does the QNH setting on a pressure altimeter display?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Height above the airfield"
+      },
+      {
+        "id": "B",
+        "text": "Altitude above mean sea level"
+      },
+      {
+        "id": "C",
+        "text": "Height above the WGS-84 ellipsoid"
+      },
+      {
+        "id": "D",
+        "text": "Altitude above the transition altitude"
+      }
+    ],
+    "correctOptionId": "B",
+    "explanation": "** The QNH setting on a pressure altimeter displays altitude above mean sea level (MSL), as stated in the study material under \"Pressure Altimeter.\""
+  },
+  {
+    "id": "q-1742079832902-1",
+    "text": "Which type of altimeter is critical for approaches and landings in low visibility conditions?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Pressure Altimeter"
+      },
+      {
+        "id": "B",
+        "text": "Radio Altimeter"
+      },
+      {
+        "id": "C",
+        "text": "GPS Altitude"
+      },
+      {
+        "id": "D",
+        "text": "Barometric Altimeter"
+      }
+    ],
+    "correctOptionId": "B",
+    "explanation": "** The radio altimeter is specifically mentioned as critical for approaches and landings in low visibility, particularly for Category II and III approaches."
+  },
+  {
+    "id": "q-1742079832902-2",
+    "text": "What is the standard pressure setting used for flight levels above the transition altitude?",
+    "options": [
+      {
+        "id": "A",
+        "text": "QNH"
+      },
+      {
+        "id": "B",
+        "text": "QFE"
+      },
+      {
+        "id": "C",
+        "text": "29.92 inHg or 1013.2 hPa"
+      },
+      {
+        "id": "D",
+        "text": "Local geoid height"
+      }
+    ],
+    "correctOptionId": "C",
+    "explanation": "** The standard pressure setting for flight levels above the transition altitude is 29.92 inHg or 1013.2 hPa, as noted in the \"Pressure Altimeter\" section."
+  },
+  {
+    "id": "q-1742079832903-3",
+    "text": "What is the primary cause of temperature error in altimeter readings?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mechanical inaccuracies in the instrument"
+      },
+      {
+        "id": "B",
+        "text": "Delay in instrument response during climbs and descents"
+      },
+      {
+        "id": "C",
+        "text": "Altimeter overreading in colder than standard air"
+      },
+      {
+        "id": "D",
+        "text": "Incorrect QNH setting"
+      }
+    ],
+    "correctOptionId": "C",
+    "explanation": "** Temperature error occurs when the altimeter overreads in colder than standard air, as described by the phrase \"High to low, look out below\" in the \"Altimeter Errors\" section."
+  },
+  {
+    "id": "q-1742079832904-4",
+    "text": "What is the approximate altitude error caused by a 1 hPa error in the QNH setting?",
+    "options": [
+      {
+        "id": "A",
+        "text": "10 feet"
+      },
+      {
+        "id": "B",
+        "text": "20 feet"
+      },
+      {
+        "id": "C",
+        "text": "30 feet"
+      },
+      {
+        "id": "D",
+        "text": "40 feet"
+      }
+    ],
+    "correctOptionId": "C",
+    "explanation": "** A 1 hPa error in the QNH setting results in an approximate altitude error of 30 feet, as stated in the \"Altimeter Errors\" section."
+  }
+]

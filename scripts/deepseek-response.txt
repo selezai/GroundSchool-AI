@@ -1,0 +1,57 @@
+### Question 1  
+**What does the QNH setting on a pressure altimeter display?**  
+A. Height above the airfield  
+B. Altitude above mean sea level  
+C. Height above the WGS-84 ellipsoid  
+D. Altitude above the transition altitude  
+
+**Correct answer: B**  
+**Explanation:** The QNH setting on a pressure altimeter displays altitude above mean sea level (MSL), as stated in the study material under "Pressure Altimeter."
+
+---
+
+### Question 2  
+**Which type of altimeter is critical for approaches and landings in low visibility conditions?**  
+A. Pressure Altimeter  
+B. Radio Altimeter  
+C. GPS Altitude  
+D. Barometric Altimeter  
+
+**Correct answer: B**  
+**Explanation:** The radio altimeter is specifically mentioned as critical for approaches and landings in low visibility, particularly for Category II and III approaches.
+
+---
+
+### Question 3  
+**What is the standard pressure setting used for flight levels above the transition altitude?**  
+A. QNH  
+B. QFE  
+C. 29.92 inHg or 1013.2 hPa  
+D. Local geoid height  
+
+**Correct answer: C**  
+**Explanation:** The standard pressure setting for flight levels above the transition altitude is 29.92 inHg or 1013.2 hPa, as noted in the "Pressure Altimeter" section.
+
+---
+
+### Question 4  
+**What is the primary cause of temperature error in altimeter readings?**  
+A. Mechanical inaccuracies in the instrument  
+B. Delay in instrument response during climbs and descents  
+C. Altimeter overreading in colder than standard air  
+D. Incorrect QNH setting  
+
+**Correct answer: C**  
+**Explanation:** Temperature error occurs when the altimeter overreads in colder than standard air, as described by the phrase "High to low, look out below" in the "Altimeter Errors" section.
+
+---
+
+### Question 5  
+**What is the approximate altitude error caused by a 1 hPa error in the QNH setting?**  
+A. 10 feet  
+B. 20 feet  
+C. 30 feet  
+D. 40 feet  
+
+**Correct answer: C**  
+**Explanation:** A 1 hPa error in the QNH setting results in an approximate altitude error of 30 feet, as stated in the "Altimeter Errors" section.
