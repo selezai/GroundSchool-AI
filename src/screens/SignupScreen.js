@@ -15,7 +15,6 @@ import {
   Image,
   ActivityIndicator
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import useStore from '../../store';
 import Button from '../components/Button';
 import { supabase } from '../services/supabaseClient';

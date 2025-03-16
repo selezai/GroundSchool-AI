@@ -3,7 +3,6 @@ import { View, Text, Button, Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../lib/supabase';
 import { generateQuestions } from '../lib/aiProcessing';
-import { useNavigation } from '@react-navigation/native';
 
 const UploadScreen = () => {
   const [file, setFile] = useState(null);

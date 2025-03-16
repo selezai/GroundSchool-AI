@@ -15,7 +15,6 @@ const EXPECTED_VERSIONS = {
   'expo-router': '4.0.2',
   'react': '18.2.0',
   'react-native': '0.74.5',
-  '@react-navigation/native': '6.1.10',
   'react-native-reanimated': '3.10.1',
   'react-native-screens': '3.31.1'
 };

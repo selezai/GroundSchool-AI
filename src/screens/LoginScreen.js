@@ -14,7 +14,6 @@ import {
   Image,
   ActivityIndicator
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import useStore from '../../store';

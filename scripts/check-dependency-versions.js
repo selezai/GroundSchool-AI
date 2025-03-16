@@ -41,9 +41,6 @@ const COMPATIBLE_VERSIONS = {
   'expo-document-picker': '~12.0.0',
   
   // React Navigation
-  '@react-navigation/native': '^6.1.6',
-  '@react-navigation/stack': '^6.3.16',
-  '@react-navigation/bottom-tabs': '^6.5.7',
   
   // UI & Utilities
   'react-native-gesture-handler': '~2.16.0',

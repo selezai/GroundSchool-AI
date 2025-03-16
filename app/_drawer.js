@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, StyleSheet, Text, Alert, Pressable, ScrollView } from 'react-native';
-import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Slot, router, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,7 +81,7 @@ function CustomDrawerContent(props) {
           borderLeftWidth: activeRoute === 'home' ? 3 : 0,
           borderLeftColor: '#00FFCC',
         }}
-        onPress={() => props.navigation.navigate('home')}
+        onPress={() => router.push('/')}
       >
         <Ionicons 
           name="home-outline" 
@@ -107,7 +106,7 @@ function CustomDrawerContent(props) {
           borderLeftWidth: activeRoute === 'profile' ? 3 : 0,
           borderLeftColor: '#00FFCC',
         }}
-        onPress={() => props.navigation.navigate('profile')}
+        onPress={() => router.push('/profile')}
       >
         <Ionicons 
           name="person-outline" 
@@ -132,7 +131,7 @@ function CustomDrawerContent(props) {
           borderLeftWidth: activeRoute === 'recent-activity' ? 3 : 0,
           borderLeftColor: '#00FFCC',
         }}
-        onPress={() => props.navigation.navigate('recent-activity')}
+        onPress={() => router.push('/recent-activity')}
       >
         <Ionicons 
           name="time-outline" 

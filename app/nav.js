@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Tabs } from 'expo-router';
-import { useRouter, useNavigation } from './router-adapter';
+import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname } from 'expo-router';
@@ -33,7 +33,7 @@ function CustomTabBar({ state, navigation }) {
         const onPress = () => {
           // Use our router adapter for consistent navigation
           if (router) {
-            router.navigate(item.route);
+            router.push(item.route);
           } else if (navigation) {
             navigation.navigate(item.name);
           }

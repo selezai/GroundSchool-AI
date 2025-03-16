@@ -1,6 +1,6 @@
 import { useSegments, Stack, Slot } from 'expo-router';
-import { useRouter } from './router-adapter';
-import { RouterComponents } from './router-adapter';
+import { useRouter } from 'expo-router';
+// RouterComponents now imported directly from expo-router
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
