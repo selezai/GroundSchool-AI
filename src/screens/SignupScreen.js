@@ -12,11 +12,13 @@ import {
   Keyboard,
   Alert,
   ScrollView,
-  Image
+  Image,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import useStore from '../../store';
 import Button from '../components/Button';
+import { supabase } from '../services/supabaseClient';
 
 /**
  * SignupScreen - Handles new user registration
@@ -69,22 +71,52 @@ const SignupScreen = ({ testID = 'signup-screen' }) => {
     try {
       setLoading(true);
       
-      // In a real implementation, this would call an API to create a user
-      // For now, we'll simulate account creation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful signup
-      const userData = {
-        id: `user_${Date.now()}`,
-        name,
+      // Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
         email,
-      };
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
       
-      await setUser(userData);
+      if (error) throw error;
       
+      // Create a user profile in the database
+      if (data?.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            full_name: name,
+            email: email,
+            created_at: new Date().toISOString(),
+          });
+          
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          // Continue anyway as the auth record was created
+        }
+        
+        // Set the user in our local state
+        await setUser({
+          id: data.user.id,
+          name,
+          email,
+        });
+        
+        // Show confirmation message about email verification if needed
+        Alert.alert(
+          'Account Created', 
+          'Your account has been created. Please check your email for verification instructions.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        );
+      }
     } catch (error) {
       console.error('Signup error:', error);
-      Alert.alert('Signup Failed', 'Failed to create account. Please try again.');
+      Alert.alert('Signup Failed', error.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }

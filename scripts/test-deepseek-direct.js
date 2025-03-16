@@ -7,20 +7,15 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-// Sample document text - replace with actual text for testing
-const SAMPLE_TEXT = `
-Aircraft Flight Control Systems
-Primary flight controls are required to safely control an aircraft during flight and consist of:
-- Ailerons to control roll (movement around the longitudinal axis)
-- Elevators to control pitch (movement around the lateral axis)
-- Rudder to control yaw (movement around the vertical axis)
-
-Secondary flight controls are used to improve aircraft performance characteristics or to relieve excessive control forces and include:
-- Flaps
-- Slats
-- Spoilers
-- Trim systems
-`;
+// Function to load a document from a file path
+const loadDocumentText = (filePath) => {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (error) {
+    console.error(`❌ Error loading document: ${error.message}`);
+    return null;
+  }
+};
 
 // Function to run the DeepSeek test
 async function testDeepSeekQuestionGeneration() {
@@ -40,6 +35,28 @@ async function testDeepSeekQuestionGeneration() {
     
     console.log('✅ Found DeepSeek API key');
     
+    // Check if document path is provided as a command line argument
+    const documentPath = process.argv[2];
+    
+    if (!documentPath) {
+      console.error('❌ No document path provided!');
+      console.log('Usage: node scripts/test-deepseek-direct.js <path-to-document>');
+      process.exit(1);
+    }
+    
+    const absPath = path.resolve(documentPath);
+    console.log(`📄 Loading document from: ${absPath}`);
+    
+    // Load document text
+    const documentText = loadDocumentText(absPath);
+    
+    if (!documentText) {
+      console.error('❌ Failed to load document!');
+      process.exit(1);
+    }
+    
+    console.log(`✅ Document loaded (${documentText.length} characters)`);
+    
     // Prepare the prompt
     const prompt = `You are an aviation exam question generator. Based on the following study material, create 5 multiple-choice questions that test understanding of key aviation concepts.
 
@@ -51,10 +68,10 @@ For each question:
 
 IMPORTANT: Make your questions ONLY about the specific information in the provided study material, not general aviation knowledge.
 
-Study material: ${SAMPLE_TEXT}`;
+Study material: ${documentText}`;
 
     console.log('📝 Sending request to DeepSeek API...');
-    console.log(`📊 Document size: ${SAMPLE_TEXT.length} characters`);
+    console.log(`📊 Document size: ${documentText.length} characters`);
     
     // Make the API request
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {

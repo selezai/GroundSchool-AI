@@ -1,0 +1,51 @@
+You are an aviation exam question generator specializing in creating DOCUMENT-SPECIFIC questions. You must create 3 multiple-choice questions EXCLUSIVELY based on the aviation study material below.
+
+CRITICAL REQUIREMENTS:
+1. EVERY question MUST be answerable using ONLY information contained explicitly in the provided study material
+2. DO NOT create generic aviation questions or use your general knowledge
+3. DO NOT invent facts not present in the document
+4. Each question must directly quote or paraphrase specific content from the study material
+5. If you cannot create enough specific questions, return fewer questions rather than creating generic ones
+
+QUESTION FORMAT REQUIREMENTS:
+1. Begin each question with "### Question X" (where X is the question number)
+2. Create a clear, specific question that targets important concepts from the material
+3. Provide 4 answer options labeled (A, B, C, D)
+4. Clearly mark the correct answer with "Correct answer: [letter]"
+5. Include an explanation that references the specific section of the document that contains the answer
+
+STUDY MATERIAL:
+
+Aviation Safety Procedures
+
+Pre-flight Inspection:
+1. Check all control surfaces for full range of motion.
+2. Inspect fuel quantity and quality.
+3. Verify oil levels are within acceptable range.
+4. Check tires for proper inflation and wear.
+5. Ensure all required documentation is on board.
+
+Emergency Procedures:
+If engine failure occurs during flight:
+- Establish best glide speed immediately
+- Look for suitable landing area
+- Attempt engine restart if time permits
+- Declare emergency on 121.5 MHz
+- Prepare passengers for emergency landing
+
+Weather Minimums:
+VFR flight requires:
+- 3 statute miles visibility
+- 1,000 ft ceiling in controlled airspace
+- 500 ft below clouds, 1,000 ft above clouds, 2,000 ft horizontal from clouds
+
+Airspace Classifications:
+Class A: IFR only, above 18,000 ft MSL
+Class B: Requires clearance, surrounds major airports
+Class C: Requires radio contact, surrounds busy airports
+Class D: Requires radio contact, surrounds smaller airports
+Class E: Controlled airspace not classified as A, B, C, or D
+Class G: Uncontrolled airspace
+
+
+FINAL REMINDER: Create ONLY questions that can be answered directly from the provided document. I will check each question against the document content, so do not introduce generic aviation information not present in this specific material.

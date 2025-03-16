@@ -1,8 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import supabase from './supabaseClient';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { Platform } from 'react-native';
+import { supabase } from './supabaseClient';
+import { nanoid } from 'nanoid';
+import * as Keychain from 'react-native-keychain';
+
+// Ensure WebBrowser is prepared for Google auth flow
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Authentication Service for handling user authentication
+ * Fully implemented with Google and Apple sign-in options
  */
 class AuthService {
   /**
@@ -164,6 +174,156 @@ class AuthService {
     
     if (error) throw error;
     return { success: true };
+  }
+  
+  /**
+   * Sign in with Google
+   * @returns {Promise<Object>} - User data and token
+   */
+  async signInWithGoogle() {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'groundschoolai://auth/callback',
+          skipBrowserRedirect: true
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        // Open OAuth URL in browser
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          'groundschoolai://auth/callback'
+        );
+        
+        if (result.type === 'success') {
+          // Check the current session
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) throw sessionError;
+          
+          if (sessionData?.session) {
+            // Store auth token and user data
+            await AsyncStorage.setItem('userToken', sessionData.session.access_token);
+            await AsyncStorage.setItem('userData', JSON.stringify(sessionData.session.user));
+            
+            return {
+              user: sessionData.session.user,
+              token: sessionData.session.access_token
+            };
+          }
+        }
+      }
+      
+      throw new Error('Google sign in failed');
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Sign in with Apple
+   * @returns {Promise<Object>} - User data and token
+   */
+  async signInWithApple() {
+    try {
+      // Skip on Android
+      if (Platform.OS === 'android') {
+        throw new Error('Apple sign in is not available on Android');
+      }
+      
+      // Check if Apple authentication is available
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        throw new Error('Apple authentication is not available on this device');
+      }
+      
+      // Perform Apple authentication
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      
+      // Use the credential to sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+      
+      if (error) throw error;
+      
+      // Store auth token and user data
+      if (data?.session) {
+        await AsyncStorage.setItem('userToken', data.session.access_token);
+        await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+        
+        // Store Apple credential securely using Keychain
+        await Keychain.setGenericPassword(
+          'apple_credential', 
+          JSON.stringify(credential)
+        );
+        
+        return {
+          user: data.user,
+          token: data.session?.access_token
+        };
+      }
+      
+      throw new Error('Apple sign in failed');
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a guest account
+   * @returns {Promise<Object>} - Guest user data and token
+   */
+  async createGuestAccount() {
+    try {
+      // Generate unique email and password for guest account
+      const guestId = nanoid(8);
+      const email = `guest_${guestId}@groundschool.ai`;
+      const password = nanoid(16);
+      
+      // Register guest user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: 'Guest Pilot',
+            is_guest: true
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Store auth token and user data
+      if (data.session) {
+        await AsyncStorage.setItem('userToken', data.session.access_token);
+        await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+        
+        // Store credentials securely using Keychain for future auto-login
+        await Keychain.setGenericPassword(email, password);
+      }
+      
+      return {
+        user: data.user,
+        token: data.session?.access_token
+      };
+    } catch (error) {
+      console.error('Guest account creation error:', error);
+      throw error;
+    }
   }
 }
 

@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import Button from '../components/Button';
+import { supabase } from '../services/supabaseClient';
+import apiClient from '../services/apiClient';
 
 /**
  * UploadScreen - Allows users to upload study materials (PDFs/images)
@@ -49,55 +52,109 @@ const UploadScreen = ({ testID = 'upload-screen' }) => {
       setLoading(true);
       setError(null);
       
-      // TODO: This is where we would call the backend API to process the file
-      // For now, we'll simulate a delay and success
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get the current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
       
-      // Mock questions (in real implementation, these would come from the Claude API)
-      const questions = [
-        {
-          id: 'q1',
-          question: 'What is the correct definition of altitude?',
-          options: [
-            'Distance above ground level',
-            'Height above mean sea level',
-            'Vertical distance from the standard datum plane',
-            'Elevation above the highest terrain'
-          ],
-          correctAnswer: 'Vertical distance from the standard datum plane',
-          category: 'Navigation',
-          difficulty: 'Medium'
-        },
-        {
-          id: 'q2',
-          question: 'Which of the following is NOT a primary flight control surface?',
-          options: [
-            'Aileron',
-            'Elevator',
-            'Rudder',
-            'Flap'
-          ],
-          correctAnswer: 'Flap',
-          category: 'Aircraft Systems',
-          difficulty: 'Easy'
-        },
-        {
-          id: 'q3',
-          question: 'What is the standard atmospheric pressure at sea level?',
-          options: [
-            '1003 hPa',
-            '1013.25 hPa',
-            '1023 hPa',
-            '1033.25 hPa'
-          ],
-          correctAnswer: '1013.25 hPa',
-          category: 'Meteorology',
-          difficulty: 'Medium'
+      // Read file content
+      let fileContent;
+      try {
+        if (file.uri.endsWith('.pdf')) {
+          // Handle PDF (would need PDF extraction logic here)
+          // Using a simplified approach - in production you'd want proper PDF text extraction
+          fileContent = `PDF Document: ${file.name}`;
+          // Note: For real implementation, use a PDF parser library
+        } else {
+          // Handle text files
+          fileContent = await FileSystem.readAsStringAsync(file.uri);
         }
-      ];
+      } catch (readError) {
+        console.error('Error reading file:', readError);
+        throw new Error('Could not read file content');
+      }
       
-      // Navigate to the QuizScreen with the generated questions
-      navigation.navigate('Quiz', { questions });
+      if (!fileContent || fileContent.length < 50) {
+        throw new Error('File content is too short or could not be extracted');
+      }
+      
+      // Upload the document to Supabase storage
+      const filePath = `documents/${user.id}/${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('user-documents')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+        
+      if (uploadError) {
+        console.error('Error uploading to storage:', uploadError);
+        throw new Error('Failed to upload document');
+      }
+      
+      // Record the upload in the database
+      const { error: dbError } = await supabase
+        .from('document_uploads')
+        .insert({
+          user_id: user.id,
+          filename: file.name,
+          filepath: filePath,
+          filesize: file.size,
+          filetype: file.mimeType
+        });
+        
+      if (dbError) {
+        console.error('Error recording upload:', dbError);
+      }
+      
+      // Generate questions using DeepSeek API
+      const questions = await apiClient.generateQuestionsWithDeepSeek(fileContent);
+      
+      // Create a quiz attempt record
+      const { data: quizAttempt, error: quizError } = await supabase
+        .from('quiz_attempts')
+        .insert({
+          user_id: user.id,
+          title: `Quiz from ${file.name}`,
+          document_name: file.name,
+          document_path: filePath,
+          total_questions: questions.length,
+          completed: false
+        })
+        .select()
+        .single();
+        
+      if (quizError) {
+        console.error('Error creating quiz:', quizError);
+        throw new Error('Failed to create quiz');
+      }
+      
+      // Save the individual questions
+      const questionRecords = questions.map(q => ({
+        quiz_attempt_id: quizAttempt.id,
+        question_text: q.question,
+        options: JSON.stringify(q.options),
+        correct_answer: q.correctAnswer,
+        category: q.category || 'General',
+        difficulty: q.difficulty || 'Medium'
+      }));
+      
+      const { error: questionsError } = await supabase
+        .from('question_answers')
+        .insert(questionRecords);
+        
+      if (questionsError) {
+        console.error('Error saving questions:', questionsError);
+      }
+      
+      // Navigate to the quiz screen with the generated questions
+      navigation.navigate('Quiz', {
+        questions,
+        title: file.name,
+        quizId: quizAttempt.id,
+        documentId: filePath
+      });
       
     } catch (err) {
       console.error('Error processing file:', err);

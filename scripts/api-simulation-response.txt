@@ -1,0 +1,33 @@
+### Question 1  
+What do white aiming point markings on a runway provide for pilots?  
+(A) The beginning of the runway available for landing  
+(B) A visual aiming point for landing  
+(C) The center of the runway  
+(D) The edge of the taxiway  
+
+Correct answer: B  
+Explanation: The document states, "White aiming point markings provide a visual aiming point for landing," which directly answers the question. This is found in the "Runway Markings" section.  
+
+---
+
+### Question 2  
+What is the visibility requirement for VFR flight in Class B airspace?  
+(A) 1 statute mile  
+(B) 2 statute miles  
+(C) 3 statute miles  
+(D) 5 statute miles  
+
+Correct answer: C  
+Explanation: The document explicitly states, "Class B Airspace: 3 statute miles visibility," which is found in the "Weather Minimums for VFR Flight" section.  
+
+---
+
+### Question 3  
+What action should a pilot take immediately after experiencing an engine failure during flight?  
+(A) Declare an emergency on 121.5 MHz  
+(B) Shut off fuel and electrical systems  
+(C) Establish best glide speed  
+(D) Unlock doors before landing  
+
+Correct answer: C  
+Explanation: The document states, "Establish best glide speed immediately (typically 65-75 knots in a small aircraft)," which is the first step in the "Engine Failure During Flight" section of the "Emergency Procedures" chapter.

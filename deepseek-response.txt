@@ -1,65 +1,57 @@
-Here are 5 multiple-choice questions based on the provided study material:
+### Question 1: VOR Signal Characteristics  
+**Question:** What is the frequency range in which VOR ground stations operate?  
+A) 88.0 to 107.9 MHz  
+B) 108.0 to 117.95 MHz  
+C) 118.0 to 136.975 MHz  
+D) 960 to 1215 MHz  
+
+**Correct Answer:** B) 108.0 to 117.95 MHz  
+**Explanation:** According to the study material, VOR ground stations operate in the frequency range of 108.0 to 117.95 MHz. This is a key characteristic of VOR navigation systems.
 
 ---
 
-### Question 1:  
-**What is the primary function of ailerons in an aircraft's flight control system?**  
-A. To control pitch around the lateral axis  
-B. To control roll around the longitudinal axis  
-C. To control yaw around the vertical axis  
-D. To improve lift during takeoff and landing  
+### Question 2: Types of VOR Stations  
+**Question:** Which type of VOR station has a range of 130 nautical miles and is designed for high-altitude navigation?  
+A) Terminal VOR (TVOR)  
+B) Low-altitude VOR  
+C) High-altitude VOR  
+D) Military TACAN  
 
-**Correct Answer:** B  
-**Explanation:** Ailerons are primary flight controls that control roll, which is the movement of the aircraft around its longitudinal axis.  
-
----
-
-### Question 2:  
-**Which of the following is NOT a primary flight control?**  
-A. Ailerons  
-B. Elevators  
-C. Rudder  
-D. Flaps  
-
-**Correct Answer:** D  
-**Explanation:** Flaps are secondary flight controls used to improve aircraft performance, while ailerons, elevators, and rudder are primary flight controls.  
+**Correct Answer:** C) High-altitude VOR  
+**Explanation:** The study material specifies that high-altitude VOR stations have a range of 130 nautical miles and are used for navigation at altitudes up to 45,000 feet.
 
 ---
 
-### Question 3:  
-**What is the primary purpose of secondary flight controls?**  
-A. To control the aircraft's basic movements (roll, pitch, and yaw)  
-B. To improve performance characteristics or relieve excessive control forces  
-C. To replace primary flight controls in case of failure  
-D. To provide navigation assistance  
+### Question 3: VOR Navigation Techniques  
+**Question:** What does each dot on the Course Deviation Indicator (CDI) represent in terms of lateral deviation from the selected course?  
+A) 1 degree  
+B) 2 degrees  
+C) 5 degrees  
+D) 10 degrees  
 
-**Correct Answer:** B  
-**Explanation:** Secondary flight controls, such as flaps, slats, spoilers, and trim systems, are used to enhance performance or reduce control forces, not to control basic movements.  
-
----
-
-### Question 4:  
-**Which secondary flight control is used to increase lift during takeoff and landing?**  
-A. Spoilers  
-B. Trim systems  
-C. Flaps  
-D. Rudder  
-
-**Correct Answer:** C  
-**Explanation:** Flaps are secondary flight controls that extend to increase the wing's surface area, thereby increasing lift during takeoff and landing.  
+**Correct Answer:** B) 2 degrees  
+**Explanation:** The study material states that each dot on the CDI represents 2 degrees of lateral deviation, with a full-scale deflection equivalent to 10 degrees off course.
 
 ---
 
-### Question 5:  
-**What axis does the rudder control movement around?**  
-A. Longitudinal axis  
-B. Lateral axis  
-C. Vertical axis  
-D. Horizontal axis  
+### Question 4: GPS Navigation Systems  
+**Question:** What is the minimum number of satellites required for RAIM to verify the integrity of GPS signals during approach procedures?  
+A) 3  
+B) 4  
+C) 5  
+D) 6  
 
-**Correct Answer:** C  
-**Explanation:** The rudder is a primary flight control that controls yaw, which is the movement of the aircraft around its vertical axis.  
+**Correct Answer:** C) 5  
+**Explanation:** The study material explains that RAIM must verify the availability of at least 5 satellites with good geometry to ensure the integrity of GPS signals for approach procedures.
 
---- 
+---
 
-These questions test the understanding of primary and secondary flight controls and their specific functions as outlined in the study material.
+### Question 5: Inertial Navigation Systems  
+**Question:** What is the typical drift rate for modern Ring Laser Gyro (RLG)-based Inertial Navigation Systems (INS)?  
+A) 0.01-0.05 nautical miles per hour  
+B) 0.1-0.5 nautical miles per hour  
+C) 1-2 nautical miles per hour  
+D) 5-10 nautical miles per hour  
+
+**Correct Answer:** B) 0.1-0.5 nautical miles per hour  
+**Explanation:** The study material specifies that modern RLG-based INS systems have typical drift rates of 0.1-0.5 nautical miles per hour due to integration errors.

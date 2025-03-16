@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -11,15 +11,19 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
-  Image
+  Image,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import useStore from '../../store';
 import Button from '../components/Button';
+import authService from '../services/authService';
 
 /**
  * LoginScreen - Handles user authentication
- * Allows users to log in with email/password or continue as guest
+ * Allows users to log in with email/password, Google, Apple, or continue as guest
  */
 const LoginScreen = ({ testID = 'login-screen' }) => {
   const navigation = useNavigation();
@@ -28,8 +32,21 @@ const LoginScreen = ({ testID = 'login-screen' }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+  
+  // Check if Apple Authentication is available on this device
+  useEffect(() => {
+    const checkAppleAuthAvailability = async () => {
+      if (Platform.OS === 'ios') {
+        const isAvailable = await AppleAuthentication.isAvailableAsync();
+        setAppleAuthAvailable(isAvailable);
+      }
+    };
+    
+    checkAppleAuthAvailability();
+  }, []);
 
-  // Handle login form submission
+  // Handle login form submission with email and password
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
@@ -39,45 +56,72 @@ const LoginScreen = ({ testID = 'login-screen' }) => {
     try {
       setLoading(true);
       
-      // In a real implementation, this would call an authentication API
-      // For now, we'll simulate a login
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use the authService to log in with email and password
+      const { user } = await authService.login(email, password);
       
-      // Mock successful login
-      const userData = {
-        id: 'user123',
-        email,
-        name: email.split('@')[0], // Extract name from email for demo
-      };
-      
-      await setUser(userData);
+      // Update the global state
+      await setUser(user);
       
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      Alert.alert('Login Failed', error.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle guest login
+  // Handle guest login - creates a temporary account
   const handleGuestLogin = async () => {
     try {
       setLoading(true);
       
-      // Create a guest user account
-      const guestUser = {
-        id: `guest_${Date.now()}`,
-        name: 'Guest User',
-        email: 'guest@example.com',
-        isGuest: true,
-      };
+      // Use authService to create a guest account
+      const { user } = await authService.createGuestAccount();
       
-      await setUser(guestUser);
+      // Update global state
+      await setUser(user);
       
     } catch (error) {
       console.error('Guest login error:', error);
       Alert.alert('Error', 'Failed to login as guest. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle Google Sign-In
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      
+      // Use authService to sign in with Google
+      const { user } = await authService.signInWithGoogle();
+      
+      // Update global state
+      await setUser(user);
+      
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      Alert.alert('Google Sign-In Failed', error.message || 'Could not sign in with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle Apple Sign-In
+  const handleAppleSignIn = async () => {
+    try {
+      setLoading(true);
+      
+      // Use authService to sign in with Apple
+      const { user } = await authService.signInWithApple();
+      
+      // Update global state
+      await setUser(user);
+      
+    } catch (error) {
+      console.error('Apple sign-in error:', error);
+      Alert.alert('Apple Sign-In Failed', error.message || 'Could not sign in with Apple');
     } finally {
       setLoading(false);
     }
@@ -147,6 +191,43 @@ const LoginScreen = ({ testID = 'login-screen' }) => {
                 testID={`${testID}-login-btn`}
               />
               
+              {/* Social sign-in options */}
+              <View style={styles.socialSignInContainer}>
+                <Text style={styles.socialSignInText}>Or sign in with</Text>
+                
+                {/* Google Sign In */}
+                <TouchableOpacity 
+                  style={styles.socialButton}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  testID={`${testID}-google-btn`}
+                >
+                  <View style={styles.socialButtonContent}>
+                    <Image 
+                      source={require('../../assets/google-icon.png')} 
+                      style={styles.socialIcon}
+                    />
+                    <Text style={styles.socialButtonText}>Google</Text>
+                  </View>
+                </TouchableOpacity>
+                
+                {/* Apple Sign In - Only shown on iOS if available */}
+                {Platform.OS === 'ios' && appleAuthAvailable && (
+                  <TouchableOpacity 
+                    style={styles.socialButton}
+                    onPress={handleAppleSignIn}
+                    disabled={loading}
+                    testID={`${testID}-apple-btn`}
+                  >
+                    <View style={styles.socialButtonContent}>
+                      <Ionicons name="logo-apple" size={22} color="#FFF" style={styles.appleIcon} />
+                      <Text style={styles.socialButtonText}>Apple</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              {/* Guest Login */}
               <TouchableOpacity 
                 style={styles.guestButton}
                 onPress={handleGuestLogin}
@@ -240,6 +321,44 @@ const styles = StyleSheet.create({
   guestButtonText: {
     color: '#E2E8F0',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  socialSignInContainer: {
+    marginVertical: 16,
+    width: '100%',
+  },
+  socialSignInText: {
+    color: '#8896AB',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  socialButton: {
+    backgroundColor: '#1E293B',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 12,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#2D3748',
+  },
+  socialButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+  },
+  appleIcon: {
+    marginRight: 10,
+  },
+  socialButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',

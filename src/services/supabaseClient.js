@@ -1,16 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Debug log for understanding environment configuration
+const debugEnvironment = () => {
+  console.log('=== ENVIRONMENT DEBUG INFO ===');
+  console.log('Platform:', Platform.OS);
+  console.log('Process env SUPABASE_URL:', process.env.SUPABASE_URL || 'undefined');
+  console.log('Expo Config Values:', {
+    supabaseUrl: Constants.expoConfig?.extra?.supabaseUrl || 'undefined',
+    supabaseKey: Constants.expoConfig?.extra?.supabaseKey ? '**present**' : 'undefined',
+    environment: Constants.expoConfig?.extra?.environment || 'undefined'
+  });
+};
+
+// Call debug function
+debugEnvironment();
 
 // Safely get environment variables with proper fallbacks
-// Use actual environment variables first, then Constants.expoConfig values
-const supabaseUrl = process.env.SUPABASE_URL || 
-                   (Constants.expoConfig?.extra?.supabaseUrl) || 
-                   'https://jqkzgtytsaphudyidcxk.supabase.co';
-
-const supabaseKey = process.env.SUPABASE_KEY || 
-                   (Constants.expoConfig?.extra?.supabaseKey) || 
-                   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxa3pndHl0c2FwaHVkeWlkY3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzNjIyNTcsImV4cCI6MjA1NjkzODI1N30.dr2SAy2P4JqPdQ8WpOexz57kIYS-B2eYO2mApzelcio';
+// Using hardcoded fallbacks since environment variables may not properly load in development
+const supabaseUrl = 'https://jqkzgtytsaphudyidcxk.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxa3pndHl0c2FwaHVkeWlkY3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzNjIyNTcsImV4cCI6MjA1NjkzODI1N30.dr2SAy2P4JqPdQ8WpOexz57kIYS-B2eYO2mApzelcio';
 
 // More detailed validation with clear console messages
 if (!supabaseUrl) {

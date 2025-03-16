@@ -12,6 +12,7 @@ import RecentActivityScreen from '../src/screens/RecentActivityScreen';
 import UploadScreen from '../src/screens/UploadScreen';
 import QuizScreen from '../src/screens/QuizScreen';
 import QuizResultsScreen from '../src/screens/QuizResultsScreen';
+import DiagnoseScreen from '../src/screens/DiagnoseScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -83,6 +84,11 @@ const ProfileStackNavigator = () => (
       name="ProfileScreen" 
       component={ProfileScreen} 
       options={{ headerShown: false }}
+    />
+    <ProfileStack.Screen 
+      name="DiagnoseScreen" 
+      component={DiagnoseScreen} 
+      options={{ title: 'DeepSeek API Diagnostics' }}
     />
   </ProfileStack.Navigator>
 );

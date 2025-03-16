@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Button from '../components/Button';
+import { supabase } from '../services/supabaseClient';
 
 /**
  * QuizResultsScreen - Shows the results of a completed quiz
@@ -17,99 +18,68 @@ const QuizResultsScreen = ({ testID = 'quiz-results-screen' }) => {
   const [quizData, setQuizData] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  // Helper function to format time spent
+  const formatTimeSpent = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+  
   // Fetch the quiz data based on quizId
   useEffect(() => {
     const fetchQuizData = async () => {
+      if (!quizId) {
+        setLoading(false);
+        return;
+      }
+      
       try {
-        // In a real app, this would come from an API or database
-        // For demo purposes, we'll use mock data
-        const mockQuizData = {
-          id: quizId || 'quiz123',
-          title: 'Navigation Fundamentals',
-          date: new Date().toISOString(),
-          score: 8,
-          totalQuestions: 10,
-          timeSpent: '6:42', // minutes:seconds
-          questions: [
-            {
-              id: 'q1',
-              question: 'What is the correct definition of altitude?',
-              options: [
-                'Distance above ground level',
-                'Height above mean sea level',
-                'Vertical distance from the standard datum plane',
-                'Elevation above the highest terrain'
-              ],
-              correctAnswer: 'Vertical distance from the standard datum plane',
-              userAnswer: 'Vertical distance from the standard datum plane',
-              isCorrect: true,
-              category: 'Navigation',
-              difficulty: 'Medium'
-            },
-            {
-              id: 'q2',
-              question: 'Which of the following is NOT a primary flight control surface?',
-              options: [
-                'Aileron',
-                'Elevator',
-                'Rudder',
-                'Flap'
-              ],
-              correctAnswer: 'Flap',
-              userAnswer: 'Flap',
-              isCorrect: true,
-              category: 'Aircraft Systems',
-              difficulty: 'Easy'
-            },
-            {
-              id: 'q3',
-              question: 'What is the standard atmospheric pressure at sea level?',
-              options: [
-                '1003 hPa',
-                '1013.25 hPa',
-                '1023 hPa',
-                '1033.25 hPa'
-              ],
-              correctAnswer: '1013.25 hPa',
-              userAnswer: '1013.25 hPa',
-              isCorrect: true,
-              category: 'Meteorology',
-              difficulty: 'Medium'
-            },
-            {
-              id: 'q4',
-              question: 'What is the purpose of a gyroscope in aircraft instruments?',
-              options: [
-                'To measure airspeed',
-                'To provide artificial horizon',
-                'To detect wind direction',
-                'To calculate fuel consumption'
-              ],
-              correctAnswer: 'To provide artificial horizon',
-              userAnswer: 'To measure airspeed',
-              isCorrect: false,
-              category: 'Instrumentation',
-              difficulty: 'Medium'
-            },
-            {
-              id: 'q5',
-              question: 'Which document contains the limitations, procedures, performance, and other information for operating a specific aircraft?',
-              options: [
-                'Aircraft Maintenance Manual',
-                'Pilot\'s Operating Handbook',
-                'Aeronautical Information Manual',
-                'Flight Operations Manual'
-              ],
-              correctAnswer: 'Pilot\'s Operating Handbook',
-              userAnswer: 'Pilot\'s Operating Handbook',
-              isCorrect: true,
-              category: 'Operations',
-              difficulty: 'Easy'
-            }
-          ]
+        setLoading(true);
+        
+        // Fetch quiz data from Supabase
+        const { data: quizAttempt, error: quizError } = await supabase
+          .from('quiz_attempts')
+          .select('*')
+          .eq('id', quizId)
+          .single();
+        
+        if (quizError) throw quizError;
+        
+        if (!quizAttempt) {
+          throw new Error('Quiz attempt not found');
+        }
+        
+        // Fetch the questions and answers for this quiz
+        const { data: questionData, error: questionsError } = await supabase
+          .from('question_answers')
+          .select('*')
+          .eq('quiz_attempt_id', quizId);
+          
+        if (questionsError) throw questionsError;
+          
+        // Format the quiz data
+        const formattedQuestions = questionData.map(q => ({
+          id: q.id,
+          question: q.question_text,
+          options: q.options ? JSON.parse(q.options) : [],
+          correctAnswer: q.correct_answer,
+          userAnswer: q.user_answer,
+          isCorrect: q.is_correct,
+          category: q.category || 'General',
+          difficulty: q.difficulty || 'Medium'
+        }));
+        
+        const formattedQuizData = {
+          id: quizAttempt.id,
+          title: quizAttempt.title || 'Quiz',
+          date: quizAttempt.created_at,
+          score: questionData.filter(q => q.is_correct).length,
+          totalQuestions: questionData.length,
+          timeSpent: formatTimeSpent(quizAttempt.duration_seconds || 0),
+          questions: formattedQuestions
         };
         
-        setQuizData(mockQuizData);
+        setQuizData(formattedQuizData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching quiz data:', error);

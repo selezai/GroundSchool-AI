@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../services/supabaseClient';
+import generateMockData from '../services/fallbackData';
 
 /**
  * RecentActivityScreen - Shows user's recent quiz attempts and study activity
@@ -13,77 +14,130 @@ const RecentActivityScreen = ({ testID = 'recent-activity-screen' }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch recent activities from storage (in real app would be from API/backend)
+  // Fetch recent activities from Supabase database
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        // In a real implementation, this would be fetched from a backend
-        // For now, we'll use mock data
-        const mockActivities = [
-          {
-            id: 'act1',
-            type: 'quiz',
-            title: 'Navigation Fundamentals',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-            completed: true,
-            score: 8,
-            totalQuestions: 10,
-            questions: [] // Would contain actual questions
-          },
-          {
-            id: 'act2',
-            type: 'quiz',
-            title: 'Aircraft Systems',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-            completed: true,
-            score: 7,
-            totalQuestions: 10,
-            questions: []
-          },
-          {
-            id: 'act3',
-            type: 'quiz',
-            title: 'Meteorology Basics',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-            completed: false,
-            progress: 4,
-            totalQuestions: 10,
-            questions: []
-          },
-          {
-            id: 'act4',
-            type: 'upload',
-            title: 'Principles of Flight.pdf',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
-            fileSize: '3.4 MB'
-          },
-          {
-            id: 'act5',
-            type: 'quiz',
-            title: 'Radio Navigation',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days ago
-            completed: true,
-            score: 9,
-            totalQuestions: 10,
-            questions: []
+        setLoading(true);
+        
+        // For development: use a 5-second timeout to prevent hanging
+        const timeout = setTimeout(() => {
+          // If we're still loading after 5 seconds, use fallback data
+          if (loading) {
+            console.warn('Supabase fetch timed out, using fallback data');
+            const mockData = generateMockData();
+            const combinedActivities = [...mockData.quizAttempts, ...mockData.documentUploads];
+            
+            // Sort by created_at date
+            combinedActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            setActivities(combinedActivities);
+            setLoading(false);
           }
-        ];
-
-        // Sort by date (newest first)
-        mockActivities.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }, 5000);
         
-        setActivities(mockActivities);
-        setLoading(false);
+        // Try to get the current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        // Store mock data in AsyncStorage for future use
-        await AsyncStorage.setItem('recentActivities', JSON.stringify(mockActivities));
+        if (userError) {
+          console.error('Auth error:', userError);
+          // Use mock data since we couldn't authenticate
+          const mockData = generateMockData();
+          const combinedActivities = [...mockData.quizAttempts, ...mockData.documentUploads];
+          
+          // Sort by created_at date
+          combinedActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          
+          setActivities(combinedActivities);
+          setLoading(false);
+          clearTimeout(timeout);
+          return;
+        }
+        
+        // User authenticated successfully, continue with real data
+        // Fetch all quiz attempts for this user
+        const { data: quizAttempts, error } = await supabase
+          .from('quiz_attempts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+          
+        if (error) {
+          console.error('Error fetching quiz attempts:', error);
+          // Fallback to mock data if we can't fetch quiz attempts
+          const mockData = generateMockData();
+          const combinedActivities = [...mockData.quizAttempts, ...mockData.documentUploads];
+          combinedActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          setActivities(combinedActivities);
+          setLoading(false);
+          clearTimeout(timeout);
+          return;
+        }
+        
+        // Format the activities
+        const formattedActivities = quizAttempts.map(attempt => ({
+          id: attempt.id,
+          type: 'quiz',
+          title: attempt.title || 'Quiz',
+          date: attempt.created_at,
+          completed: attempt.completed,
+          score: attempt.score,
+          totalQuestions: attempt.total_questions,
+          progress: attempt.progress || 0,
+          documentName: attempt.document_name || null
+        }));
+        
+        // Also fetch document uploads if needed
+        const { data: uploads, error: uploadsError } = await supabase
+          .from('document_uploads')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+          
+        if (!uploadsError && uploads) {
+          // Add document uploads to activities
+          const uploadActivities = uploads.map(upload => ({
+            id: upload.id,
+            type: 'upload',
+            title: upload.filename || 'Document',
+            date: upload.created_at,
+            fileSize: upload.filesize ? `${Math.round(upload.filesize / 1024)} KB` : 'Unknown size'
+          }));
+          
+          // Combine and sort all activities by date
+          const allActivities = [...formattedActivities, ...uploadActivities];
+          allActivities.sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          setActivities(allActivities);
+        } else {
+          setActivities(formattedActivities);
+        }
       } catch (error) {
-        console.error('Error fetching recent activities:', error);
+        console.error('Error fetching activities:', error);
+        // Use fallback data in case of any errors
+        const mockData = generateMockData();
+        const combinedActivities = [...mockData.quizAttempts, ...mockData.documentUploads];
+        combinedActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setActivities(combinedActivities);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchActivities();
+    
+    // Alert user about fallback data in development mode
+    if (__DEV__) {
+      setTimeout(() => {
+        Alert.alert(
+          'Development Mode',
+          'The app will display mock data if Supabase connection fails.',
+          [{ text: 'OK' }]
+        );
+      }, 1000);
+    }
   }, []);
 
   // Format date to relative time (e.g., "2 hours ago")

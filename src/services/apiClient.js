@@ -274,6 +274,9 @@ class ApiClient {
    * @returns {Promise<Array>} - Array of generated questions
    */
   async generateQuestionsWithDeepSeek(documentText, options = {}) {
+    const MAX_RETRIES = 3; // Maximum number of retry attempts
+    let retryCount = 0; // Initialize retry counter
+    
     try {
       console.log('Starting DeepSeek API request for question generation');
       console.log(`Document text length: ${documentText.length} characters`);
@@ -312,40 +315,46 @@ class ApiClient {
         model: 'deepseek-chat' // DeepSeek Chat model
       };
       
-      // Trim document text to avoid token limits while preserving content
-      // Keep the beginning and end of the document as these often contain key information
-      const MAX_CHARS = 15000;
+      // Improved document processing to retain more context
+      // We'll use a smarter approach to preserve document structure better
+      const MAX_CHARS = 24000; // Increased to capture more content
       let processedText = documentText;
       
       if (documentText.length > MAX_CHARS) {
-        const halfMax = Math.floor(MAX_CHARS / 2);
-        processedText = documentText.substring(0, halfMax) + 
-          '\n[Content trimmed for length...]\n' + 
-          documentText.substring(documentText.length - halfMax);
-        console.log(`Trimmed document text from ${documentText.length} to ${processedText.length} chars`);
+        // Calculate sections to keep more intelligently
+        const startSection = Math.floor(MAX_CHARS * 0.6); // 60% from start
+        const endSection = Math.floor(MAX_CHARS * 0.4);   // 40% from end
+        
+        // Extract content to preserve important sections
+        processedText = documentText.substring(0, startSection) + 
+          '\n\n[...Some content omitted for length...]\n\n' + 
+          documentText.substring(documentText.length - endSection);
+          
+        console.log(`Enhanced document processing: Trimmed from ${documentText.length} to ${processedText.length} chars`);
+        console.log(`Keeping first ${startSection} and last ${endSection} chars of content`);
       }
       
-      // Prepare the prompt for DeepSeek
-      const prompt = `You are an aviation exam question generator. Your ONLY task is to create ${questionOptions.questionCount} multiple-choice questions STRICTLY based on the study material provided below.
+      // Enhanced prompt for DeepSeek with stronger focus on document specificity
+      const prompt = `You are an aviation exam question generator specializing in creating DOCUMENT-SPECIFIC questions. You must create ${questionOptions.questionCount} multiple-choice questions EXCLUSIVELY based on the aviation study material below.
 
-IMPORTANT RULES:
-1. ONLY create questions about specific information contained in the study material
-2. DO NOT create generic aviation questions not covered in the material
-3. Each question must directly reference concepts, facts, or procedures from the text
-4. If the study material is insufficient, create fewer high-quality specific questions instead of generic ones
+CRITICAL REQUIREMENTS:
+1. EVERY question MUST be answerable using ONLY information contained explicitly in the provided study material
+2. DO NOT create generic aviation questions or use your general knowledge
+3. DO NOT invent facts not present in the document
+4. Each question must directly quote or paraphrase specific content from the study material
+5. If you cannot create enough specific questions, return fewer questions rather than creating generic ones
 
-For each question:
-1. Create a clear, specific question about an important concept from the material
-2. Provide 4 answer options labeled (A, B, C, D)
-3. Clearly indicate the correct answer with "Correct answer: [letter]"
-4. Include a brief explanation of why the answer is correct
-
-Format each question with a clear question number, the question text, options A-D, correct answer, and explanation.
+QUESTION FORMAT REQUIREMENTS:
+1. Begin each question with "### Question X" (where X is the question number)
+2. Create a clear, specific question that targets important concepts from the material
+3. Provide 4 answer options labeled (A, B, C, D)
+4. Clearly mark the correct answer with "Correct answer: [letter]"
+5. Include an explanation that references the specific section of the document that contains the answer
 
 STUDY MATERIAL:
 ${processedText}
 
-Remember: Quality over quantity. Only create questions directly answerable from the provided study material.`;
+FINAL REMINDER: Create ONLY questions that can be answered directly from the provided document. I will check each question against the document content, so do not introduce generic aviation information not present in this specific material.`;
       
       // Make direct request to DeepSeek API with better error handling
       console.log(`Making request to DeepSeek API with model: ${questionOptions.model}`);
@@ -369,44 +378,182 @@ Remember: Quality over quantity. Only create questions directly answerable from 
         })
       });
       
-      const requestDuration = Date.now() - requestStartTime;
-      console.log(`DeepSeek API request completed in ${requestDuration / 1000} seconds`);
-      
-      // Parse response with better error handling
-      if (!response.ok) {
-        let errorMessage = `HTTP error ${response.status}: ${response.statusText}`;
+        // Parse response with enhanced error handling and detailed logging
+        console.log('[DEBUG] API Response status:', response.status);
         
-        try {
-          const errorData = await response.json();
-          errorMessage = `DeepSeek API error: ${errorData.error?.message || errorMessage}`;
-        } catch (jsonError) {
-          // If we can't parse JSON, just use the HTTP error
+        if (!response.ok) {
+          let errorMessage = `HTTP error ${response.status}: ${response.statusText}`;
+          console.error('[ERROR] Non-200 response from DeepSeek API:', response.status);
+          
+          // Enhanced parsing of error responses
+          try {
+            const errorText = await response.text();
+            console.error('[ERROR] DeepSeek error response body:', errorText);
+            
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = `DeepSeek API error: ${errorData.error?.message || errorData.message || errorMessage}`;
+              
+              // Check for specific error patterns
+              if (errorData.error?.code === 'invalid_api_key' || 
+                  errorText.includes('authentication') || 
+                  errorText.includes('api key')) {
+                console.error('[ERROR] API key authentication issue detected');
+              }
+            } catch (jsonError) {
+              console.error('[ERROR] Could not parse error response as JSON:', jsonError);
+            }
+          } catch (textError) {
+            console.error('[ERROR] Could not read error response as text:', textError);
+          }
+          
+          console.error('[FATAL]', errorMessage);
+          
+          // If this is a retry-able error (like rate limiting or temporary API issue)
+          if (response.status === 429 || response.status >= 500) {
+            if (retryCount < MAX_RETRIES) {
+              retryCount++;
+              const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+              console.log(`[RETRY] Attempt ${retryCount} of ${MAX_RETRIES} after ${delay}ms delay`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue; // Retry the request
+            }
+          }
+          
+          throw new Error(errorMessage);
         }
         
-        console.error(errorMessage);
-        throw new Error(errorMessage);
+        // Parse the successful response with enhanced validation
+        console.log('[DEBUG] Parsing DeepSeek API response');
+        let data;
+        
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('[ERROR] Failed to parse API response as JSON:', jsonError);
+          console.error('[ERROR] Response status was:', response.status);
+          
+          try {
+            const textResponse = await response.text();
+            console.error('[ERROR] Raw response text:', textResponse.substring(0, 500) + '...');
+          } catch (e) {
+            console.error('[ERROR] Could not extract response text:', e);
+          }
+          
+          throw new Error('Invalid JSON response from DeepSeek API');
+        }
+        
+        console.log('[SUCCESS] Successfully received and parsed DeepSeek API response');
+        
+        // Validate the response format with detailed inspection
+        if (!data) {
+          console.error('[ERROR] Empty response data from DeepSeek API');
+          throw new Error('Empty response from DeepSeek API');
+        }
+        
+        if (!data.choices) {
+          console.error('[ERROR] Missing choices in DeepSeek API response:', JSON.stringify(data).substring(0, 200));
+          throw new Error('Missing choices in DeepSeek API response');
+        }
+        
+        if (!data.choices[0]) {
+          console.error('[ERROR] Empty choices array in DeepSeek API response:', data.choices);
+          throw new Error('Empty choices in DeepSeek API response');
+        }
+        
+        if (!data.choices[0].message) {
+          console.error('[ERROR] No message in first choice of DeepSeek API response:', data.choices[0]);
+          throw new Error('No message in DeepSeek API response');
+        }
+        
+        if (!data.choices[0].message.content) {
+          console.error('[ERROR] No content in message of DeepSeek API response:', data.choices[0].message);
+          throw new Error('No content in DeepSeek API response message');
+        }
+        
+        // Validate the content for expected question format
+        const content = data.choices[0].message.content;
+        
+        console.log('[DEBUG] Content length:', content.length);
+        console.log('[DEBUG] Content preview:', content.substring(0, 200) + '...');
+        
+        // Check if the content actually contains questions
+        const questionMatches = content.match(/### Question \d+/g) || [];
+        console.log('[DEBUG] Detected questions in response:', questionMatches.length);
+        
+        if (questionMatches.length === 0) {
+          console.warn('[WARN] No questions detected in standard format, checking alternative formats...');
+          
+          // Check for alternative formats before giving up
+          const altFormats = {
+            numberedList: (content.match(/\d+\.\s+.*\?/g) || []).length,
+            questionText: (content.match(/Question:?\s+.*\?/gi) || []).length,
+            anyQuestionMarks: (content.match(/\?/g) || []).length
+          };
+          
+          console.log('[DEBUG] Alternative formats detected:', JSON.stringify(altFormats));
+          
+          if (altFormats.anyQuestionMarks === 0) {
+            console.error('[ERROR] No question marks found in response content');
+            console.error('[ERROR] Response does not appear to contain actual questions');
+            throw new Error('DeepSeek API response does not contain properly formatted questions');
+          }
+        }
+        
+        // Log success metrics to help diagnose the quality of the response
+        console.log('[METRICS] Response statistics:');
+        console.log('  - Content length:', content.length);
+        console.log('  - Questions found:', questionMatches.length);
+        console.log('  - Question marks:', (content.match(/\?/g) || []).length);
+        console.log('  - Multiple choice options:', (content.match(/\([A-D]\)/g) || []).length);
+        console.log('  - Correct answer indicators:', (content.match(/Correct answer/gi) || []).length);
+        
+        // Extract and return the AI response with enhanced data
+        console.log('[SUCCESS] API request completed successfully');
+        
+        return {
+          rawResponse: data.choices[0].message.content,
+          model: data.model || "deepseek-chat",
+          usage: data.usage || { completion_tokens: 0, prompt_tokens: 0, total_tokens: 0 },
+          questionCount: questionMatches.length,
+          timestamp: new Date().toISOString()
+        };
+        
+      } catch (error) {
+        // Detailed error handling and logging
+        console.error('┌─────────────────────────────────────────────────');
+        console.error('│ ❌ DEEPSEEK API REQUEST FAILED');
+        console.error('│ Error:', error.message);
+        
+        if (error.name === 'AbortError') {
+          console.error('│ Cause: Request timed out after 60 seconds');
+        } else if (error.message.includes('Network request failed')) {
+          console.error('│ Cause: Network connectivity issue');
+        } else {
+          console.error('│ Stack:', error.stack);
+        }
+        
+        console.error('└─────────────────────────────────────────────────');
+        
+        // Retry logic for recoverable errors
+        if (retryCount < MAX_RETRIES && 
+            (error.message.includes('Network request failed') || 
+             error.name === 'AbortError' || 
+             error.message.includes('429') || 
+             error.message.includes('500'))) {
+          retryCount++;
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+          console.log(`[RETRY] Attempt ${retryCount} of ${MAX_RETRIES} after ${delay}ms delay`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue; // Retry the request
+        }
+        
+        throw error;
       }
-      
-      // Parse the successful response
-      const data = await response.json();
-      console.log('Successfully received DeepSeek API response');
-      
-      // Validate the response format
-      if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-        console.error('Invalid response format from DeepSeek API:', data);
-        throw new Error('Invalid response format from DeepSeek API');
-      }
-      
-      // Extract and return the AI response
-      return {
-        rawResponse: data.choices[0].message.content,
-        model: data.model,
-        usage: data.usage
-      };
-    } catch (error) {
-      console.error('DeepSeek API request error:', error);
-      throw error;
     }
+    
+    // If we've exhausted retries
+    throw new Error(`DeepSeek API request failed after ${MAX_RETRIES} retries`);
   }
 }
 

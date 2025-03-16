@@ -1,38 +1,121 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useStore from '../../store';
 import Button from '../components/Button';
+import { supabase } from '../services/supabaseClient';
 
 /**
  * ProfileScreen - User profile and settings
  * Shows user information, statistics, and allows logout
  */
-const ProfileScreen = ({ testID = 'profile-screen' }) => {
+const ProfileScreen = ({ navigation, testID = 'profile-screen' }) => {
   const { user, clearUser } = useStore();
+  const [userStats, setUserStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock statistics data (would be fetched from backend in real implementation)
-  const userStats = {
-    questionsAnswered: 328,
-    quizzesTaken: 14,
-    avgAccuracy: '76%',
-    topCategory: 'Navigation',
-    studyTimeHours: 8.5,
-  };
+  // Fetch real user statistics from Supabase
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch quiz history from Supabase
+        const { data: quizzes, error: quizzesError } = await supabase
+          .from('quiz_attempts')
+          .select('*')
+          .eq('user_id', user.id);
+          
+        if (quizzesError) throw quizzesError;
+        
+        // Fetch question answers
+        const { data: answers, error: answersError } = await supabase
+          .from('question_answers')
+          .select('*')
+          .eq('user_id', user.id);
+          
+        if (answersError) throw answersError;
+        
+        // Calculate statistics
+        const totalQuizzes = quizzes?.length || 0;
+        const totalQuestions = answers?.length || 0;
+        
+        // Calculate accuracy
+        const correctAnswers = answers?.filter(a => a.is_correct)?.length || 0;
+        const accuracy = totalQuestions > 0 
+          ? Math.round((correctAnswers / totalQuestions) * 100) + '%' 
+          : '0%';
+        
+        // Calculate study time (sum of quiz durations)
+        const studyTimeMinutes = quizzes?.reduce((total, quiz) => {
+          return total + (quiz.duration_seconds || 0) / 60;
+        }, 0) || 0;
+        
+        // Find top category
+        const categories = {};
+        answers?.forEach(answer => {
+          if (answer.category) {
+            categories[answer.category] = (categories[answer.category] || 0) + 1;
+          }
+        });
+        
+        let topCategory = 'None';
+        let maxCount = 0;
+        
+        Object.entries(categories).forEach(([category, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            topCategory = category;
+          }
+        });
+        
+        // Set user stats
+        setUserStats({
+          questionsAnswered: totalQuestions,
+          quizzesTaken: totalQuizzes,
+          avgAccuracy: accuracy,
+          topCategory: topCategory,
+          studyTimeHours: Math.round(studyTimeMinutes / 60 * 10) / 10, // Round to 1 decimal
+        });
+      } catch (error) {
+        console.error('Error fetching user stats:', error);
+        // Provide default empty stats on error
+        setUserStats({
+          questionsAnswered: 0,
+          quizzesTaken: 0,
+          avgAccuracy: '0%',
+          topCategory: 'None',
+          studyTimeHours: 0,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserStats();
+  }, [user?.id]);
 
-  // Placeholder settings options
+  // Settings options
   const settingsOptions = [
     { id: 'notifications', title: 'Push Notifications', icon: 'notifications-outline' },
     { id: 'appearance', title: 'Appearance', icon: 'color-palette-outline' },
     { id: 'language', title: 'Language', icon: 'language-outline' },
     { id: 'reset', title: 'Reset Progress', icon: 'refresh-outline' },
+    { id: 'diagnostics', title: 'DeepSeek API Diagnostics', icon: 'bug-outline' },
     { id: 'help', title: 'Help & Support', icon: 'help-circle-outline' },
     { id: 'about', title: 'About', icon: 'information-circle-outline' },
   ];
 
   const handleSettingPress = (settingId) => {
-    // For future implementation
     console.log(`Setting pressed: ${settingId}`);
+    
+    if (settingId === 'diagnostics') {
+      // Navigate to the diagnostic screen
+      navigation.navigate('DiagnoseScreen');
+    }
+    // Other settings can be implemented in the future
   };
 
   const handleLogout = async () => {
@@ -56,31 +139,41 @@ const ProfileScreen = ({ testID = 'profile-screen' }) => {
 
         <View style={styles.statsContainer}>
           <Text style={styles.sectionTitle}>Study Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.questionsAnswered}</Text>
-              <Text style={styles.statLabel}>Questions</Text>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#00FFCC" />
+              <Text style={styles.loadingText}>Loading statistics...</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.quizzesTaken}</Text>
-              <Text style={styles.statLabel}>Quizzes</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.avgAccuracy}</Text>
-              <Text style={styles.statLabel}>Accuracy</Text>
-            </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.statsGrid}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userStats?.questionsAnswered || 0}</Text>
+                  <Text style={styles.statLabel}>Questions</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userStats?.quizzesTaken || 0}</Text>
+                  <Text style={styles.statLabel}>Quizzes</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{userStats?.avgAccuracy || '0%'}</Text>
+                  <Text style={styles.statLabel}>Accuracy</Text>
+                </View>
+              </View>
 
-          <View style={styles.additionalStats}>
-            <View style={styles.statRow}>
-              <Text style={styles.statRowLabel}>Top Category</Text>
-              <Text style={styles.statRowValue}>{userStats.topCategory}</Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statRowLabel}>Study Time</Text>
-              <Text style={styles.statRowValue}>{userStats.studyTimeHours} hours</Text>
-            </View>
-          </View>
+              <View style={styles.additionalStats}>
+                <View style={styles.statRow}>
+                  <Text style={styles.statRowLabel}>Top Category</Text>
+                  <Text style={styles.statRowValue}>{userStats?.topCategory || 'None'}</Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={styles.statRowLabel}>Study Time</Text>
+                  <Text style={styles.statRowValue}>{userStats?.studyTimeHours || 0} hours</Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.settingsContainer}>
@@ -223,6 +316,16 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginBottom: 24,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#CCCCCC',
+    marginTop: 10,
+    fontSize: 14,
   },
 });
 

@@ -1,0 +1,33 @@
+### Question 1  
+During a pre-flight inspection, which of the following is NOT listed as a required check?  
+(A) Verify oil levels are within acceptable range  
+(B) Check the battery charge level  
+(C) Inspect fuel quantity and quality  
+(D) Ensure all required documentation is on board  
+
+Correct answer: B  
+Explanation: The pre-flight inspection checklist in the study material includes verifying oil levels, inspecting fuel quantity and quality, and ensuring all required documentation is on board. There is no mention of checking the battery charge level.  
+
+---
+
+### Question 2  
+In the event of an engine failure during flight, what is the first action a pilot should take?  
+(A) Declare an emergency on 121.5 MHz  
+(B) Attempt to restart the engine  
+(C) Establish best glide speed immediately  
+(D) Prepare passengers for an emergency landing  
+
+Correct answer: C  
+Explanation: The emergency procedures section explicitly states that the first action during an engine failure is to "establish best glide speed immediately."  
+
+---
+
+### Question 3  
+For VFR flight in controlled airspace, what is the minimum required visibility?  
+(A) 1 statute mile  
+(B) 3 statute miles  
+(C) 5 statute miles  
+(D) 10 statute miles  
+
+Correct answer: B  
+Explanation: The weather minimums section states that VFR flight requires "3 statute miles visibility" in controlled airspace.
