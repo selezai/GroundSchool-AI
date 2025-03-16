@@ -11,7 +11,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "environment": {
+        "env": {
           "NODE_OPTIONS": "--max-old-space-size=8192",
           "EXPO_NO_CACHE": "1"
         },
