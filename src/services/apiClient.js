@@ -416,7 +416,10 @@ FINAL REMINDER: Create ONLY questions that can be answered directly from the pro
               const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
               console.log(`[RETRY] Attempt ${retryCount} of ${MAX_RETRIES} after ${delay}ms delay`);
               await new Promise(resolve => setTimeout(resolve, delay));
-              continue; // Retry the request
+              
+              // Instead of continue, we need to retry the request properly
+              // We'll handle this in the calling function
+              return { shouldRetry: true, retryCount };
             }
           }
           
