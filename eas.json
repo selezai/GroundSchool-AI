@@ -3,7 +3,17 @@
     "version": ">= 7.0.0"
   },
   "build": {
-    "android": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
       "android": {
         "buildType": "apk"
       }
