@@ -1,7 +1,26 @@
+// RUNNING MODIFIED API CLIENT VERSION 2.1
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import Constants from 'expo-constants';
 import env from '../utils/environment';
+
+// Retry utility function
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+async function executeRequestWithRetry(fn, retries = MAX_RETRIES) {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries > 0 && (error.status === 429 || error.status >= 500)) {
+      const delay = Math.pow(2, MAX_RETRIES - retries + 1) * 1000; // Exponential backoff
+      console.log(`[RETRY] Attempt ${MAX_RETRIES - retries + 1} of ${MAX_RETRIES} after ${delay}ms delay`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return executeRequestWithRetry(fn, retries - 1);
+    }
+    throw error;
+  }
+}
 
 // Get API configuration from our environment utility
 const API_BASE_URL = env.apiBaseUrl || 'https://jqkzgtytsaphudyidcxk.supabase.co/rest/v1';
@@ -360,22 +379,33 @@ FINAL REMINDER: Create ONLY questions that can be answered directly from the pro
       console.log(`Making request to DeepSeek API with model: ${questionOptions.model}`);
       
       const requestStartTime = Date.now();
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: questionOptions.model,
-          max_tokens: 4000,
-          messages: [
-            {
-              role: "user",
-              content: prompt
-            }
-          ]
-        })
+      const response = await executeRequestWithRetry(async () => {
+        const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: questionOptions.model,
+            max_tokens: 4000,
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ]
+          })
+        });
+        
+        if (!resp.ok && (resp.status === 429 || resp.status >= 500)) {
+          // Create an error object with status for the retry function to check
+          const error = new Error(`HTTP error ${resp.status}`);
+          error.status = resp.status;
+          throw error;
+        }
+        
+        return resp;
       });
       
         // Parse response with enhanced error handling and detailed logging
@@ -409,19 +439,8 @@ FINAL REMINDER: Create ONLY questions that can be answered directly from the pro
           
           console.error('[FATAL]', errorMessage);
           
-          // If this is a retry-able error (like rate limiting or temporary API issue)
-          if (response.status === 429 || response.status >= 500) {
-            if (retryCount < MAX_RETRIES) {
-              retryCount++;
-              const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-              console.log(`[RETRY] Attempt ${retryCount} of ${MAX_RETRIES} after ${delay}ms delay`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              
-              // Instead of continue, we need to retry the request properly
-              // We'll handle this in the calling function
-              return { shouldRetry: true, retryCount };
-            }
-          }
+          // Retry logic is now handled by executeRequestWithRetry function
+          // No need for manual retry handling here
           
           throw new Error(errorMessage);
         }
