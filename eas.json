@@ -3,13 +3,9 @@
     "version": ">= 7.0.0"
   },
   "build": {
-    "production": {
-      "node": "18.20.7",
+    "android": {
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "ENVIRONMENT": "production"
       }
     }
   }
