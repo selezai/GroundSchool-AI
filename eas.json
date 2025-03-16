@@ -10,13 +10,7 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "env": {
-          "NODE_OPTIONS": "--max-old-space-size=8192",
-          "EXPO_NO_CACHE": "1"
-        },
-        "autoIncrement": "version",
-        "image": "ubuntu-22.04-jdk-17"
+        "buildType": "apk"
       }
     },
     "production": {
