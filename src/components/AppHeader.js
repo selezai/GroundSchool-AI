@@ -178,29 +178,7 @@ const AppHeader = ({ title = 'GroundSchool-AI', withBack = false }) => {
         
         <View style={styles.titleContainer}>
           {/* Only show logo on home screen */}
-          {(pathname === '/' || pathname === '/index') && (() => {
-            try {
-              // Attempt to load the logo
-              return (
-                <Image 
-                  source={require('../../assets/logo.png')}
-                  style={styles.headerLogo}
-                  resizeMode="contain"
-                  onError={(error) => {
-                    console.error('Failed to load logo image:', error.nativeEvent.error);
-                    setLogoLoaded(false);
-                  }}
-                  onLoad={() => {
-                    console.log('Logo image loaded successfully on home screen');
-                    setLogoLoaded(true);
-                  }}
-                />
-              );
-            } catch (error) {
-              console.error('Error rendering logo:', error);
-              return null;
-            }
-          })()}
+          {['/', '/index'].includes(pathname) && <SafeImageComponent />}
           <Text style={styles.title}>{title}</Text>
         </View>
         
@@ -448,5 +426,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+// Safe image component to handle logo loading
+const SafeImageComponent = () => {
+  try {
+    return (
+      <Image
+        source={require('../../assets/logo.png')}
+        style={styles.headerLogo}
+        resizeMode="contain"
+        onError={(e) => console.log('Image load error:', e.nativeEvent?.error || 'Unknown error')}
+      />
+    );
+  } catch (error) {
+    console.error('Critical image load failure:', error);
+    return null;
+  }
+};
 
 export default AppHeader;

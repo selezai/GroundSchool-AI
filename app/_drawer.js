@@ -4,6 +4,8 @@ import { Slot, router, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import Logger from '../src/utils/Logger';
 
 const Drawer = createDrawerNavigator();
 
@@ -19,11 +21,20 @@ function CustomDrawerContent(props) {
           text: 'Logout',
           onPress: async () => {
             try {
+              Logger.info('User logging out');
               await AsyncStorage.removeItem('userToken');
               await AsyncStorage.removeItem('userData');
-              router.replace('/auth/login');
+              // Use SafeNavigationService imported from the global scope
+              // This avoids direct router usage which can cause issues
+              if (global.safeNavigation) {
+                global.safeNavigation.replace('/auth/login');
+              } else {
+                // Fallback to router if safeNavigation is not available
+                Logger.warn('SafeNavigationService not available, using direct router');
+                router.replace('/auth/login');
+              }
             } catch (error) {
-              console.error('Error logging out:', error);
+              Logger.error('Error logging out:', error);
               Alert.alert('Error', 'Failed to log out. Please try again.');
             }
           }
@@ -211,13 +222,30 @@ function MenuItem({ label, icon, isActive = false, onPress }) {
   );
 }
 
-// Header component with menu button
+// Header component with menu button - using SafeNavigationService
 function HeaderLeft() {
-  const navigation = useNavigation();
+  // Safe drawer open handler using SafeNavigationService
+  const handleOpenDrawer = React.useCallback(() => {
+    try {
+      if (global.safeNavigation) {
+        global.safeNavigation.openDrawer();
+      } else {
+        // Fallback if SafeNavigationService is not available
+        const navigation = useNavigation();
+        if (navigation?.openDrawer) {
+          navigation.openDrawer();
+        } else {
+          Logger.warn('HeaderLeft: No drawer navigation available');
+        }
+      }
+    } catch (error) {
+      Logger.error('HeaderLeft: Error opening drawer:', error);
+    }
+  }, []);
   
   return (
     <Pressable
-      onPress={() => navigation.openDrawer()}
+      onPress={handleOpenDrawer}
       style={{ marginLeft: 16 }}
     >
       <Ionicons 
@@ -230,8 +258,37 @@ function HeaderLeft() {
 }
 
 export default function DrawerLayout() {
+  // Create a ref for the drawer navigator
+  const drawerRef = React.useRef(null);
+  
+  // Register the drawer with SafeNavigationService when it's available
+  React.useEffect(() => {
+    if (drawerRef.current && global.safeNavigation) {
+      global.safeNavigation.setDrawerNavigator(drawerRef.current);
+      Logger.info('Drawer navigator registered with SafeNavigationService');
+    }
+  }, [drawerRef.current]);
+  
+  // Safe drawer open handler using SafeNavigationService
+  const handleOpenDrawer = React.useCallback(() => {
+    try {
+      if (global.safeNavigation) {
+        global.safeNavigation.openDrawer();
+      } else {
+        // Fallback if SafeNavigationService is not available
+        const navigation = useNavigation();
+        if (navigation?.openDrawer) {
+          navigation.openDrawer();
+        }
+      }
+    } catch (error) {
+      Logger.error('Error opening drawer:', error);
+    }
+  }, []);
+  
   return (
     <Drawer.Navigator
+      ref={drawerRef}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: true,
@@ -270,10 +327,9 @@ export default function DrawerLayout() {
           marginTop: 0,
         },
         headerLeft: ({ tintColor }) => {
-          const navigation = useNavigation();
           return (
             <Pressable
-              onPress={() => navigation.openDrawer()}
+              onPress={handleOpenDrawer}
               style={{ marginLeft: 16 }}
             >
               <Ionicons 
