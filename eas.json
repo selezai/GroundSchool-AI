@@ -28,7 +28,8 @@
         "ENVIRONMENT": "staging",
         "IS_DEVELOPMENT_BUILD": "false",
         "IS_PREVIEW_BUILD": "true",
-        "IS_PRODUCTION_BUILD": "false"
+        "IS_PRODUCTION_BUILD": "false",
+        "SENTRY_ENVIRONMENT": "preview"
       },
       "channel": "preview"
     },

@@ -16,6 +16,8 @@ import ErrorBoundary from '../src/components/ErrorBoundary';
 import Logger from '../src/utils/Logger';
 import * as FileSystem from 'expo-file-system';
 import safeNavigation from '../src/services/SafeNavigationService';
+import * as Sentry from '@sentry/react-native';
+import { captureException } from '../src/utils/SentryConfig';
 
 // Import our new components and services
 import { NavigationProvider } from '../src/navigation/NavigationController';
@@ -29,7 +31,9 @@ global.safeNavigation = safeNavigation;
 import { getSupabase } from '../src/services/supabaseClient';
 
 // Prevent the splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(e => {
+  console.warn('Error preventing splash screen auto-hide:', e);
+});
 
 // Default app theme (will be overridden by ThemeContext)
 const defaultTheme = {
@@ -581,29 +585,135 @@ function Auth() {
 }
 
 export default function RootLayout() {
+  // State for tracking font loading and app initialization
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [appIsReady, setAppIsReady] = useState(false);
+  const [initError, setInitError] = useState(null);
+
+  // Load fonts and prepare the app
+  useEffect(() => {
+    async function prepare() {
+      try {
+        Logger.info('Starting app preparation');
+        
+        // Add a breadcrumb for Sentry tracking
+        Sentry.addBreadcrumb({
+          category: 'app.lifecycle',
+          message: 'App preparation started',
+          level: Sentry.Severity.Info
+        });
+        
+        // Load fonts first
+        await Font.loadAsync({
+          // Add your custom fonts here
+          // 'open-sans': require('../assets/fonts/OpenSans-Regular.ttf'),
+        }).catch(e => {
+          Logger.warn('Font loading failed, continuing without custom fonts:', e);
+          captureException(e, { context: 'FontLoading', fatal: false });
+        });
+        
+        setFontsLoaded(true);
+        Logger.info('Fonts loaded successfully');
+        
+        // Add a breadcrumb for Sentry tracking
+        Sentry.addBreadcrumb({
+          category: 'app.lifecycle',
+          message: 'Fonts loaded successfully',
+          level: Sentry.Severity.Info
+        });
+        
+        // Artificial delay to ensure splash screen shows properly
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Mark app as ready
+        setAppIsReady(true);
+        Logger.info('App preparation complete');
+        
+        // Add a breadcrumb for Sentry tracking
+        Sentry.addBreadcrumb({
+          category: 'app.lifecycle',
+          message: 'App preparation complete',
+          level: Sentry.Severity.Info
+        });
+      } catch (e) {
+        Logger.error('Error preparing app:', e);
+        captureException(e, { context: 'AppPreparation', fatal: true });
+        setInitError(e);
+        // Still mark as ready to show error screen instead of hanging
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  // Handle splash screen hiding when app is ready
+  useEffect(() => {
+    if (appIsReady) {
+      Logger.info('App is ready, hiding splash screen');
+      // Use a slight delay to ensure all rendering is complete
+      setTimeout(() => {
+        SplashScreen.hideAsync().catch(e => {
+          Logger.error('Error hiding splash screen:', e);
+        });
+      }, 150);
+    }
+  }, [appIsReady]);
+
   // Add global error handler for non-React errors
   useEffect(() => {
     Logger.info('Setting up global error handler in RootLayout');
     
     const handleError = (error) => {
       Logger.error('Global error caught in RootLayout', error);
+      
+      // Report to Sentry
+      captureException(error, {
+        context: 'RootLayout',
+        isFatal: true,
+        componentName: 'RootLayout'
+      });
+      
       // Always hide splash screen on error
       SplashScreen.hideAsync()
         .then(() => Logger.info('Splash screen hidden after global error'))
-        .catch(e => Logger.error('Failed to hide splash screen after global error', e));
+        .catch(e => {
+          Logger.error('Failed to hide splash screen after global error', e);
+          captureException(e, { context: 'SplashScreen.hideAsync' });
+        });
     };
 
     // Set up global error handler
     const originalErrorHandler = ErrorUtils.getGlobalHandler();
     ErrorUtils.setGlobalHandler((error, isFatal) => {
       Logger.error(`Global JS error caught (isFatal: ${isFatal})`, error);
+      
+      // Report to Sentry
+      captureException(error, {
+        context: 'GlobalErrorHandler',
+        isFatal: isFatal,
+        stack: error.stack
+      });
+      
       handleError(error);
       originalErrorHandler(error, isFatal);
     });
 
+    // Track app state changes for better crash diagnostics
+    const handleAppStateChange = (nextAppState) => {
+      Sentry.addBreadcrumb({
+        category: 'app.state',
+        message: `App State changed to: ${nextAppState}`,
+        level: Sentry.Severity.Info
+      });
+    };
+    
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+
     return () => {
       Logger.info('Restoring original error handler');
       ErrorUtils.setGlobalHandler(originalErrorHandler);
+      appStateSubscription.remove();
     };
   }, []);
 

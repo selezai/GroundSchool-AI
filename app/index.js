@@ -148,6 +148,33 @@ export default function HomeScreen() {
               testID="home-screen-recent-activity-btn"
             />
           </View>
+
+          {/* Developer Tools Card - Only visible in development */}
+          {__DEV__ && (
+            <View style={[styles.card, { borderColor: 'rgba(75, 192, 192, 0.5)' }]}>
+              <Text style={[styles.cardTitle, { color: '#4BC0C0' }]}>Developer Tools</Text>
+              <Text style={styles.cardDescription}>
+                Tools for testing and debugging the application.
+              </Text>
+              <Button 
+                title="Sentry Test Screen" 
+                onPress={() => {
+                  requestAnimationFrame(() => {
+                    try {
+                      router.push('/sentry-test');
+                    } catch (error) {
+                      console.error('Navigation error:', error);
+                      setTimeout(() => router.push('/sentry-test'), 50);
+                    }
+                  });
+                }}
+                size="large"
+                variant="outline"
+                style={{ backgroundColor: 'rgba(75, 192, 192, 0.2)' }}
+                testID="home-screen-sentry-test-btn"
+              />
+            </View>
+          )}
         </View>
 
         <View style={styles.infoSection}>

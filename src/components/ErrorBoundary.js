@@ -4,6 +4,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import Logger from '../utils/Logger';
+import * as Sentry from '@sentry/react-native';
+import { captureException } from '../utils/SentryConfig';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -28,6 +30,13 @@ class ErrorBoundary extends React.Component {
     Logger.error('Error caught by ErrorBoundary', error);
     Logger.error(`Component stack: ${errorInfo?.componentStack || 'Not available'}`);
     
+    // Report to Sentry
+    captureException(error, {
+      componentStack: errorInfo?.componentStack,
+      reactComponent: this.props.componentName || 'Unknown',
+      lastAction: this.props.lastAction || 'Unknown',
+    });
+    
     // Track error frequency to detect crash loops
     const now = Date.now();
     const lastError = this.state.lastErrorTimestamp;
@@ -47,6 +56,9 @@ class ErrorBoundary extends React.Component {
     // If we're getting frequent errors, store a flag to trigger safe mode on next app start
     if (isFrequentError && this.state.errorCount > 3) {
       Logger.warn('Frequent errors detected - marking app for safe mode on next start');
+      // Report crash loop to Sentry
+      Sentry.captureMessage('Crash loop detected', Sentry.Severity.Fatal);
+      
       AsyncStorage.setItem('APP_SAFE_MODE', 'true')
         .then(() => Logger.info('Safe mode flag set successfully'))
         .catch(e => Logger.error('Failed to set safe mode flag', e));
@@ -101,9 +113,14 @@ class ErrorBoundary extends React.Component {
     try {
       Logger.info('User attempting to share error logs');
       const logs = await Logger.getLogs();
+      
+      // Get Sentry event ID if available
+      const sentryEventId = Sentry.lastEventId() || 'No Sentry ID available';
+      
       const errorText = `Error: ${this.state.error?.toString() || 'Unknown error'}\n\n` +
                        `Component Stack: ${this.state.errorInfo?.componentStack || 'Not available'}\n\n` +
                        `Device: ${Platform.OS} ${Platform.Version}\n\n` +
+                       `Sentry Event ID: ${sentryEventId}\n\n` +
                        `Recent Logs:\n${logs.slice(0, 20).map(log => 
                           `${log.timestamp} [${log.level}] ${log.message} ${log.error ? '- ' + log.error : ''}`
                         ).join('\n')}`;
@@ -116,6 +133,7 @@ class ErrorBoundary extends React.Component {
       Logger.info('Error logs shared successfully');
     } catch (e) {
       Logger.error('Failed to share error logs', e);
+      captureException(e, { context: 'shareErrorLogs' });
     }
   }
 
