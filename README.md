@@ -9,6 +9,7 @@ A comprehensive aviation study app that helps users prepare for aviation exams t
 - **User Authentication**: Google, Apple, Email/Password, and Guest login options
 - **Progress Tracking**: Track quiz performance and study time
 - **Settings & Preferences**: Customize your learning experience
+- **Crash Reporting**: Integrated Sentry for robust error tracking and diagnostics
 
 ## Getting Started
 
