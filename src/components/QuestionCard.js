@@ -61,7 +61,7 @@ QuestionCard.propTypes = {
   questionNumber: PropTypes.number.isRequired,
   questionText: PropTypes.string.isRequired,
   category: PropTypes.string.isRequired,
-  difficulty: PropTypes.oneOf(['Easy', 'Medium', 'Hard']).isRequired,
+  difficulty: PropTypes.oneOf(['Easy', 'Medium', 'Hard']),
   options: PropTypes.arrayOf(PropTypes.shape({
     text: PropTypes.string.isRequired,
     isCorrect: PropTypes.bool
