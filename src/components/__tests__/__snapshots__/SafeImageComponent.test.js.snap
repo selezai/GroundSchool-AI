@@ -1,0 +1,235 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SafeImageComponent applies custom container style 1`] = `
+<View
+  style={
+    [
+      {
+        "overflow": "hidden",
+      },
+      {
+        "backgroundColor": "red",
+      },
+    ]
+  }
+>
+  <Image
+    onError={[Function]}
+    onLoad={[Function]}
+    resizeMode="contain"
+    source={
+      {
+        "uri": "https://example.com/image.jpg",
+      }
+    }
+    style={
+      [
+        {
+          "height": "100%",
+          "width": "100%",
+        },
+        {
+          "height": 100,
+          "width": 100,
+        },
+        {
+          "opacity": 0,
+        },
+      ]
+    }
+  />
+</View>
+`;
+
+exports[`SafeImageComponent applies custom resize mode 1`] = `
+<View
+  style={
+    [
+      {
+        "overflow": "hidden",
+      },
+      undefined,
+    ]
+  }
+>
+  <Image
+    onError={[Function]}
+    onLoad={[Function]}
+    resizeMode="cover"
+    source={
+      {
+        "uri": "https://example.com/image.jpg",
+      }
+    }
+    style={
+      [
+        {
+          "height": "100%",
+          "width": "100%",
+        },
+        {
+          "height": 100,
+          "width": 100,
+        },
+        {
+          "opacity": 0,
+        },
+      ]
+    }
+  />
+</View>
+`;
+
+exports[`SafeImageComponent handles error in onError callback 1`] = `
+<View
+  style={
+    [
+      {
+        "overflow": "hidden",
+      },
+      undefined,
+    ]
+  }
+>
+  <Image
+    onError={[Function]}
+    onLoad={[Function]}
+    resizeMode="contain"
+    source={
+      {
+        "uri": "https://example.com/image.jpg",
+      }
+    }
+    style={
+      [
+        {
+          "height": "100%",
+          "width": "100%",
+        },
+        {
+          "height": 100,
+          "width": 100,
+        },
+        {
+          "opacity": 0,
+        },
+      ]
+    }
+  />
+</View>
+`;
+
+exports[`SafeImageComponent handles image load error 1`] = `
+<View
+  style={
+    [
+      {
+        "overflow": "hidden",
+      },
+      undefined,
+    ]
+  }
+>
+  <Image
+    onError={[Function]}
+    onLoad={[Function]}
+    resizeMode="contain"
+    source={
+      {
+        "uri": "https://example.com/fallback.jpg",
+      }
+    }
+    style={
+      [
+        {
+          "height": "100%",
+          "width": "100%",
+        },
+        {
+          "height": 100,
+          "width": 100,
+        },
+        {
+          "opacity": 0,
+        },
+      ]
+    }
+  />
+</View>
+`;
+
+exports[`SafeImageComponent handles image load success 1`] = `
+<View
+  style={
+    [
+      {
+        "overflow": "hidden",
+      },
+      undefined,
+    ]
+  }
+>
+  <Image
+    onError={[Function]}
+    onLoad={[Function]}
+    resizeMode="contain"
+    source={
+      {
+        "uri": "https://example.com/image.jpg",
+      }
+    }
+    style={
+      [
+        {
+          "height": "100%",
+          "width": "100%",
+        },
+        {
+          "height": 100,
+          "width": 100,
+        },
+        false,
+      ]
+    }
+  />
+</View>
+`;
+
+exports[`SafeImageComponent renders correctly with default props 1`] = `
+<View
+  style={
+    [
+      {
+        "overflow": "hidden",
+      },
+      undefined,
+    ]
+  }
+>
+  <Image
+    onError={[Function]}
+    onLoad={[Function]}
+    resizeMode="contain"
+    source={
+      {
+        "uri": "https://example.com/image.jpg",
+      }
+    }
+    style={
+      [
+        {
+          "height": "100%",
+          "width": "100%",
+        },
+        {
+          "height": 100,
+          "width": 100,
+        },
+        {
+          "opacity": 0,
+        },
+      ]
+    }
+  />
+</View>
+`;

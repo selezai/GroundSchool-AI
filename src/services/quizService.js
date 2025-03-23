@@ -1115,4 +1115,5 @@ QuizService.prototype.submitQuizAnswers = function(quizResult) {
 
 // Create and export a singleton instance
 const quizService = new QuizService();
+export { sanitizeQuizId };
 export default quizService;
