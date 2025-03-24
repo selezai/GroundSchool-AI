@@ -1,5 +1,9 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import React from 'react';
-import { renderHook } from '@testing-library/react-hooks';
+import { render, renderHook } from '@testing-library/react';
 import renderer, { act } from 'react-test-renderer';
 import { ThemeProvider, useTheme } from '../ThemeContext';
 
@@ -45,11 +49,9 @@ describe('ThemeContext', () => {
   });
 
   it('useTheme hook returns theme context', () => {
-    const wrapper = ({ children }) => (
-      <ThemeProvider>{children}</ThemeProvider>
-    );
-
-    const { result } = renderHook(() => useTheme(), { wrapper });
+    const { result } = renderHook(() => useTheme(), { 
+      wrapper: ({ children }) => <ThemeProvider>{children}</ThemeProvider>
+    });
 
     expect(result.current).toEqual({
       isDarkMode: true,
@@ -67,8 +69,10 @@ describe('ThemeContext', () => {
   });
 
   it('useTheme hook throws error when used outside provider', () => {
-    const { result } = renderHook(() => useTheme());
-    expect(result.error).toEqual(Error('useTheme must be used within a ThemeProvider'));
+    // In React 18 testing library, we need to check for the error differently
+    expect(() => {
+      renderHook(() => useTheme());
+    }).toThrow('useTheme must be used within a ThemeProvider');
   });
 });
 

@@ -1,0 +1,1 @@
+ 2jsXhr.src/components/__mocks__/@expo/vector-icons.js

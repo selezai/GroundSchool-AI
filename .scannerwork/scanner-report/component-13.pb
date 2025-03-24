@@ -1,0 +1,1 @@
+ 2jsXðhrsrc/screens/DiagnoseScreen.js
