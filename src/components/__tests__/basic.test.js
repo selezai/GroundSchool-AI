@@ -1,4 +1,5 @@
 // Basic test for React Native components
+/* global describe, it, expect */
 import React from 'react';
 import { Text } from 'react-native';
 import renderer from 'react-test-renderer';

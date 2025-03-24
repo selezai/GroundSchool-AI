@@ -14,11 +14,12 @@ class DocumentService {
   async processDocument(file, options = {}) {
     try {
       // Set default options
-      const processingOptions = {
-        extractText: true,
-        generateSummary: true,
-        ...options
-      };
+      // Commented out as it's currently unused
+      // const processingOptions = {
+      //   extractText: true,
+      //   generateSummary: true,
+      //   ...options
+      // };
       
       // Upload file to Supabase storage
       const fileExt = file.name.split('.').pop();
@@ -29,7 +30,7 @@ class DocumentService {
       const blob = await response.blob();
       
       // Upload to storage bucket
-      const { data: storageData, error: storageError } = await supabase.storage
+      const { /* data: storageData, */ error: storageError } = await supabase.storage
         .from('documents')
         .upload(fileName, blob, {
           contentType: file.type,
@@ -122,7 +123,7 @@ class DocumentService {
         await this.saveDocumentToStorage(document);
         
         return document;
-      } catch (apiError) {
+      } catch (_apiError) {
         console.log('Could not fetch document from Supabase, trying local storage');
         
         // Fall back to local storage if API fails
@@ -237,13 +238,14 @@ class DocumentService {
     try {
       // Placeholder: In a real implementation, we would use a service to extract topics
       // For now, return a mock response
-      return {
+      const result = {
         topics: [
           { name: 'Topic 1', relevance: 0.95 },
           { name: 'Topic 2', relevance: 0.85 },
           { name: 'Topic 3', relevance: 0.75 }
         ]
       };
+      return result;
     } catch (error) {
       console.error('Extract topics error:', error);
       throw error;

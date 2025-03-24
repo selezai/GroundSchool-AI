@@ -1,3 +1,5 @@
+/* global jest, describe, beforeEach, afterEach, it, expect, test */
+
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import Input from '../Input';

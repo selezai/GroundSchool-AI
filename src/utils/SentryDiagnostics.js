@@ -19,7 +19,7 @@ export const sendDiagnosticInfo = () => {
     const deviceInfo = {
       platform: Platform.OS,
       version: Platform.Version,
-      isHermes: typeof HermesInternal === 'object' && HermesInternal !== null,
+      isHermes: typeof global.HermesInternal !== 'undefined' && global.HermesInternal !== null,
       dimensions: { width, height, scale, fontScale },
       constants: Platform.constants || {},
       apiLevel: Platform.OS === 'android' ? Platform.constants.Release : undefined,
@@ -120,7 +120,7 @@ export const runDiagnostics = () => {
     Sentry.addBreadcrumb({
       category: 'sentry.diagnostic',
       message: 'Running diagnostics',
-      level: Sentry.Severity.Info
+      level: 'info' // Using string level instead of Sentry.Severity enum
     });
     
     // Run tests

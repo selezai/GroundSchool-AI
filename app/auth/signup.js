@@ -10,8 +10,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
-  ScrollView,
-  Image
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -68,7 +67,7 @@ export default function SignupScreen() {
       
       // In a real implementation, this would call an API to create a user
       // For now, we'll simulate account creation
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => global.setTimeout(resolve, 1500));
       
       // Mock successful signup
       const userData = {

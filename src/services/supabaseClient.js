@@ -35,7 +35,7 @@ const safeAsyncStorage = {
   getItem: async (key) => {
     try {
       return await AsyncStorage.getItem(key);
-    } catch (error) {
+    } catch (_error) {
       Logger.warn(`Failed to get item from AsyncStorage: ${key}`);
       return null;
     }
@@ -43,7 +43,7 @@ const safeAsyncStorage = {
   setItem: async (key, value) => {
     try {
       return await AsyncStorage.setItem(key, value);
-    } catch (error) {
+    } catch (_error) {
       Logger.warn(`Failed to set item in AsyncStorage: ${key}`);
       return null;
     }
@@ -51,8 +51,8 @@ const safeAsyncStorage = {
   removeItem: async (key) => {
     try {
       return await AsyncStorage.removeItem(key);
-    } catch (error) {
-      console.warn(`Failed to remove item from AsyncStorage: ${key}`, error);
+    } catch (_error) {
+      Logger.warn(`Failed to remove item from AsyncStorage: ${key}`);
       return null;
     }
   }
@@ -85,14 +85,14 @@ const getSupabase = () => {
         global: {
           // Add more resilient fetch with timeout for network issues
           fetch: (...args) => {
-            const controller = new AbortController();
+            const controller = new global.AbortController();
             const { signal } = controller;
             
             // Set 30 second timeout for API calls to prevent hanging
-            const timeout = setTimeout(() => controller.abort(), 30000);
+            const timeout = global.setTimeout(() => controller.abort(), 30000);
             
             return fetch(...args, { signal })
-              .finally(() => clearTimeout(timeout));
+              .finally(() => global.clearTimeout(timeout));
           }
         }
       }

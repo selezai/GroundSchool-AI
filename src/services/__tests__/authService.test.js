@@ -1,3 +1,5 @@
+/* global jest, describe, beforeEach, it, expect */
+
 // Mock the modules before importing the service
 jest.mock('../supabaseClient', () => ({
   supabase: {

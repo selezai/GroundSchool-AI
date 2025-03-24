@@ -125,7 +125,7 @@ export default function EditProfileScreen() {
       setIsSaving(true);
       
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => global.setTimeout(resolve, 1000));
       
       const updatedUser = {
         ...user,
@@ -170,7 +170,7 @@ export default function EditProfileScreen() {
       setIsSaving(true);
       
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => global.setTimeout(resolve, 1000));
       
       // In a real app, we would verify the current password and update it on the server
       
@@ -204,7 +204,7 @@ export default function EditProfileScreen() {
               setIsSaving(true);
               
               // Simulate API call
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => global.setTimeout(resolve, 1000));
               
               // Clear all user data
               await AsyncStorage.multiRemove(['userToken', 'userData']);

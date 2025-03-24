@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../src/components/Button';
@@ -114,7 +114,7 @@ export default function HomeScreen() {
                   } catch (error) {
                     console.error('Navigation error:', error);
                     // Fallback navigation with shorter timeout
-                    setTimeout(() => router.push('/upload'), 50);
+                    global.setTimeout(() => router.push('/upload'), 50);
                   }
                 });
               }}
@@ -139,7 +139,7 @@ export default function HomeScreen() {
                   } catch (error) {
                     console.error('Navigation error:', error);
                     // Fallback navigation with shorter timeout
-                    setTimeout(() => router.push('/recent-activity'), 50);
+                    global.setTimeout(() => router.push('/recent-activity'), 50);
                   }
                 });
               }}
@@ -164,7 +164,7 @@ export default function HomeScreen() {
                       router.push('/sentry-test');
                     } catch (error) {
                       console.error('Navigation error:', error);
-                      setTimeout(() => router.push('/sentry-test'), 50);
+                      global.setTimeout(() => router.push('/sentry-test'), 50);
                     }
                   });
                 }}

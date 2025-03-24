@@ -96,7 +96,11 @@ const PlatformService = {
        */
       getItem: async (key) => {
         try {
-          return localStorage.getItem(key);
+          // Check if localStorage is available in this environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage.getItem(key);
+          }
+          return null;
         } catch (error) {
           Logger.error('Web storage getItem error', error);
           return null;
@@ -111,7 +115,10 @@ const PlatformService = {
        */
       setItem: async (key, value) => {
         try {
-          localStorage.setItem(key, value);
+          // Check if localStorage is available in this environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(key, value);
+          }
         } catch (error) {
           Logger.error('Web storage setItem error', error);
         }
@@ -124,7 +131,10 @@ const PlatformService = {
        */
       removeItem: async (key) => {
         try {
-          localStorage.removeItem(key);
+          // Check if localStorage is available in this environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem(key);
+          }
         } catch (error) {
           Logger.error('Web storage removeItem error', error);
         }
@@ -136,7 +146,10 @@ const PlatformService = {
        */
       clear: async () => {
         try {
-          localStorage.clear();
+          // Check if localStorage is available in this environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.clear();
+          }
         } catch (error) {
           Logger.error('Web storage clear error', error);
         }

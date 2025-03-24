@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Share, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system';
 import Logger from '../src/utils/Logger';
@@ -51,7 +51,7 @@ export default function DebugScreen() {
           const value = await AsyncStorage.getItem(key);
           // Truncate long values
           result[key] = value && value.length > 100 ? value.substring(0, 100) + '...' : value;
-        } catch (e) {
+        } catch (_e) {
           result[key] = 'Error reading value';
         }
       }

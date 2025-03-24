@@ -1,3 +1,5 @@
+/* global jest, describe, beforeEach, it, expect */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNotifications } from '../NotificationContext';
 

@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { supabase } from './supabaseClient';
@@ -157,7 +156,7 @@ class AuthService {
    * @returns {Promise<Object>} - Response data
    */
   async requestPasswordReset(email) {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
     return { success: true };
   }
@@ -168,7 +167,7 @@ class AuthService {
    * @returns {Promise<Object>} - Response data
    */
   async resetPassword(newPassword) {
-    const { data, error } = await supabase.auth.updateUser({
+    const { error } = await supabase.auth.updateUser({
       password: newPassword
     });
     

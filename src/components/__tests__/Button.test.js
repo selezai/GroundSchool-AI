@@ -3,6 +3,8 @@ import renderer, { act } from 'react-test-renderer';
 import { fireEvent, render } from '@testing-library/react-native';
 import Button from '../Button';
 
+/* global describe, it, expect */
+
 describe('Button Component', () => {
   // Snapshot test
   it('renders correctly', () => {

@@ -5,6 +5,8 @@
  * we'll focus on testing the retry logic behavior rather than the axios configuration.
  */
 
+/* global describe, it, expect */
+
 describe('apiClient', () => {
   // We're testing the behavior of the shouldRetry function that's used in the apiClient
   // This function determines when to retry failed requests

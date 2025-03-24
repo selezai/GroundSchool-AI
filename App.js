@@ -74,7 +74,7 @@ export default function SentryApp() {
 }
 
 function App() {
-  const { user, setUser } = useStore();
+  const { setUser } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing user session on app start
@@ -85,7 +85,7 @@ function App() {
         const safeMode = await AsyncStorage.getItem('APP_SAFE_MODE');
         if (safeMode === 'true') {
           Logger.warn('App starting in safe mode due to previous crashes');
-          Sentry.captureMessage('App starting in safe mode', Sentry.Severity.Warning);
+          Sentry.captureMessage('App starting in safe mode', 'warning');
           // Clear the safe mode flag so we don't get stuck in it
           await AsyncStorage.setItem('APP_SAFE_MODE', 'false');
         }
@@ -126,7 +126,7 @@ function App() {
         global.removeEventListener('unhandledrejection', unhandledRejectionHandler);
       }
     };
-  }, []);
+  }, [setUser]); // Removed Sentry and Logger as they are stable references
 
   if (isLoading) {
     // You could add a splash screen or loading indicator here

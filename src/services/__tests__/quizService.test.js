@@ -1,8 +1,21 @@
+/* global jest, describe, beforeEach, it, expect, Blob */
+
+// Mock Blob if it's not defined in the test environment
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+// Platform import commented out as it's currently unused
+// import { Platform } from 'react-native';
 import quizService from '../quizService';
 import apiClient from '../apiClient';
 import { supabase } from '../supabaseClient';
+
+if (typeof Blob === 'undefined') {
+  global.Blob = class Blob {
+    constructor(content, options) {
+      this.content = content;
+      this.options = options;
+    }
+  };
+}
 
 // Mock dependencies
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -335,7 +348,8 @@ describe('QuizService', () => {
         error: null
       };
       
-      const mockQuestionsSelect = jest.fn().mockResolvedValue(mockQuestionsData);
+      // Commented out as it's currently unused
+      // const _mockQuestionsSelect = jest.fn().mockResolvedValue(mockQuestionsData);
       
       // Setup the from mock to handle different table queries
       supabase.from = jest.fn((tableName) => {

@@ -1,3 +1,22 @@
+/* global jest, describe, beforeEach, it, expect, Blob */
+
+// Mock Blob if it's not defined in the test environment
+// Import dependencies after mocking
+import { supabase } from '../supabaseClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Import the service to test
+import documentService from '../documentService';
+
+if (typeof Blob === 'undefined') {
+  global.Blob = class Blob {
+    constructor(content, options) {
+      this.content = content;
+      this.options = options;
+    }
+  };
+}
+
 // Mock the modules before importing the service
 jest.mock('../supabaseClient', () => {
   const mockSupabase = {
@@ -29,13 +48,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 // Mock fetch for file uploads
 global.fetch = jest.fn();
 global.Blob = class Blob {};
-
-// Import dependencies after mocking
-import { supabase } from '../supabaseClient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Import the service to test
-import documentService from '../documentService';
 
 describe('DocumentService', () => {
   beforeEach(() => {

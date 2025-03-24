@@ -1,3 +1,6 @@
+// Import Jest globals
+/* global test, expect */
+
 test('Babel transforms ES features correctly', () => {
   const arrowFn = () => {};
   class TestClass {}

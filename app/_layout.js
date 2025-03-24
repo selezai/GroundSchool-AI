@@ -1,34 +1,34 @@
-import { useSegments, Stack, Slot } from 'expo-router';
-import { useRouter, usePathname } from 'expo-router';
+import { useSegments, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 // RouterComponents now imported directly from expo-router
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState, useCallback, useContext } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity, ErrorUtils, Platform, Alert, Linking, AppState } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator, Text, TouchableOpacity, ErrorUtils, Platform, AppState } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ThemeProvider, ThemeContext } from '../src/context/ThemeContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { NotificationProvider } from '../src/context/NotificationContext';
 import ErrorBoundary from '../src/components/ErrorBoundary';
 import Logger from '../src/utils/Logger';
-import * as FileSystem from 'expo-file-system';
+// FileSystem import removed as it was unused
 import safeNavigation from '../src/services/SafeNavigationService';
 import * as Sentry from '@sentry/react-native';
 import { captureException } from '../src/utils/SentryConfig';
 
 // Import our new components and services
 import { NavigationProvider } from '../src/navigation/NavigationController';
-import PlatformService from '../src/services/PlatformService';
+// PlatformService import removed as it was unused
 import { initializeApp } from '../src/initialization/initEngine';
-import { useSafeState, useSafeEffect } from '../src/hooks/useSafeState';
-import RuntimeGuard from '../src/errorHandling/RuntimeGuard';
+import { getSupabase } from '../src/services/supabaseClient';
+// Safe state hooks import removed as they were unused
+// RuntimeGuard import removed as it was unused
 
 // Make SafeNavigationService available globally to avoid import issues
 global.safeNavigation = safeNavigation;
-import { getSupabase } from '../src/services/supabaseClient';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(e => {
@@ -67,7 +67,8 @@ try {
 
 // Styles will be created dynamically based on theme
 
-// AppLoadingSkeleton component for showing during initialization
+// AppLoadingSkeleton component for showing during initialization - Commented out as it's currently unused
+/*
 const AppLoadingSkeleton = () => {
   return (
     <View style={{
@@ -81,27 +82,28 @@ const AppLoadingSkeleton = () => {
     </View>
   );
 };
-
-// FatalErrorScreen component for showing when initialization fails
+*/
+// FatalErrorScreen component for showing when initialization fails - Commented out as it is currently unused
+/*
 const FatalErrorScreen = ({ error }) => {
   return (
     <View style={{
       flex: 1,
-      backgroundColor: '#0A0F24',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "#0A0F24",
+      justifyContent: "center",
+      alignItems: "center",
       padding: 20
     }}>
-      <Text style={{ color: '#FF6B6B', fontSize: 20, marginBottom: 10 }}>Critical Error</Text>
-      <Text style={{ color: '#FFFFFF', textAlign: 'center', marginBottom: 20 }}>
+      <Text style={{ color: "#FF6B6B", fontSize: 20, marginBottom: 10 }}>Critical Error</Text>
+      <Text style={{ color: "#FFFFFF", textAlign: "center", marginBottom: 20 }}>
         The app encountered a critical error during startup.
       </Text>
-      <Text style={{ color: '#E2E8F0', fontSize: 12, marginBottom: 20 }}>
-        {error?.message || 'Unknown error'}
+      <Text style={{ color: "#E2E8F0", fontSize: 12, marginBottom: 20 }}>
+        {error?.message || "Unknown error"}
       </Text>
       <TouchableOpacity 
         style={{
-          backgroundColor: '#00FFCC',
+          backgroundColor: "#00FFCC",
           paddingVertical: 12,
           paddingHorizontal: 24,
           borderRadius: 8
@@ -110,28 +112,33 @@ const FatalErrorScreen = ({ error }) => {
           try {
             // Clear app data and restart
             AsyncStorage.clear().then(() => {
-              router.replace('/');
+              // Use the router from expo-router
+              import("expo-router").then(({ router }) => {
+                router.replace("/");
+              });
             });
           } catch (e) {
-            console.error('Failed to reset app:', e);
+            console.error("Failed to reset app:", e);
           }
         }}
       >
-        <Text style={{ color: '#0A0F24', fontWeight: 'bold' }}>Reset App</Text>
+        <Text style={{ color: "#0A0F24", fontWeight: "bold" }}>Reset App</Text>
       </TouchableOpacity>
     </View>
   );
 };
+*/
 
+// Web-specific Auth component without drawer navigation
 // Web-specific Auth component without drawer navigation
 function WebAuth() {
   const [isLoading, setIsLoading] = useState(true);
   const [userToken, setUserToken] = useState(null);
   const [initializationError, setInitializationError] = useState(null);
   const [isAppReady, setIsAppReady] = useState(false);
-  const router = useRouter();
+  const _router = useRouter();
   const segments = useSegments();
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [_fontsLoaded, setFontsLoaded] = useState(false);
   const [startupError, setStartupError] = useState(null);
   
   // Simplified initialization for web platform
@@ -156,10 +163,15 @@ function WebAuth() {
         
         // Get token from localStorage
         try {
-          const token = localStorage.getItem('userToken');
-          console.log(`Token retrieved from localStorage: ${token ? 'exists' : 'null'}`);
-          setUserToken(token);
-        } catch (storageError) {
+          // Check if localStorage is available in this environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const token = window.localStorage.getItem('userToken');
+            console.log(`Token retrieved from localStorage: ${token ? 'exists' : 'null'}`);
+            setUserToken(token);
+          } else {
+            setUserToken(null);
+          }
+        } catch (_storageError) {
           console.warn('Could not access localStorage for token retrieval');
           setUserToken(null);
         } finally {
@@ -190,10 +202,10 @@ function WebAuth() {
       
       if (!userToken && !inAuthGroup) {
         console.log('Redirecting to login screen (web)');
-        setTimeout(() => router.replace('/auth/login'), 100);
+        global.setTimeout(() => _router.replace('/auth/login'), 100);
       } else if (userToken && inAuthGroup) {
         console.log('Redirecting to home screen (web)');
-        setTimeout(() => router.replace('/'), 100);
+        global.setTimeout(() => _router.replace('/'), 100);
       } else {
         console.log('No navigation redirect needed (web)');
       }
@@ -201,7 +213,7 @@ function WebAuth() {
       console.error('Web navigation effect error', e);
       setStartupError(e.message);
     }
-  }, [isLoading, userToken, segments, router]);
+  }, [isLoading, userToken, segments, _router]);
   
   // Show initialization error screen
   if (initializationError) {
@@ -274,9 +286,9 @@ function Auth() {
   const [userToken, setUserToken] = useState(null);
   const [initializationError, setInitializationError] = useState(null);
   const [isAppReady, setIsAppReady] = useState(false);
-  const router = useRouter();
+  const _router = useRouter();
   const segments = useSegments();
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [_fontsLoaded, setFontsLoaded] = useState(false);
   const [startupError, setStartupError] = useState(null);
   
   // Phased app initialization
@@ -303,8 +315,8 @@ function Auth() {
           if (Platform.OS === 'web') {
             // Use localStorage on web
             try {
-              safeMode = localStorage.getItem('APP_SAFE_MODE');
-            } catch (storageError) {
+              safeMode = window.localStorage.getItem('APP_SAFE_MODE');
+            } catch (_storageError) {
               console.warn('Could not access localStorage for safe mode check');
             }
           } else {
@@ -317,8 +329,8 @@ function Auth() {
             // Clear the flag for next start
             if (Platform.OS === 'web') {
               try {
-                localStorage.setItem('APP_SAFE_MODE', 'false');
-              } catch (storageError) {
+                window.localStorage.setItem('APP_SAFE_MODE', 'false');
+              } catch (_storageError) {
                 console.warn('Could not write to localStorage');
               }
             } else {
@@ -378,7 +390,7 @@ function Auth() {
       Logger.info('Starting authentication check');
       
       // Set a short timeout to ensure we don't get stuck
-      setTimeout(() => {
+      global.setTimeout(() => {
         try {
           // Try to get token but don't wait for it - with platform-specific handling
           Logger.info('Retrieving token from storage');
@@ -386,10 +398,10 @@ function Auth() {
           if (Platform.OS === 'web') {
             // Use localStorage on web
             try {
-              const token = localStorage.getItem('userToken');
+              const token = window.localStorage.getItem('userToken');
               Logger.info(`Token retrieved from localStorage: ${token ? 'exists' : 'null'}`);
               setUserToken(token);
-            } catch (storageError) {
+            } catch (_storageError) {
               console.warn('Could not access localStorage for token retrieval');
               setUserToken(null);
             } finally {
@@ -441,7 +453,7 @@ function Auth() {
   
   // Safety timeout - force app to continue after 2 seconds no matter what
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = global.setTimeout(() => {
       if (isLoading) {
         Logger.warn('Safety timeout triggered - forcing app to continue after timeout');
         setIsLoading(false);
@@ -451,7 +463,7 @@ function Auth() {
       }
     }, 2000);
     
-    return () => clearTimeout(timer);
+    return () => global.clearTimeout(timer);
   }, [isLoading]);
 
   // Handle navigation only after loading is complete - using SafeNavigationService
@@ -471,10 +483,10 @@ function Auth() {
       
       if (!userToken && !inAuthGroup) {
         Logger.info('Redirecting to login screen');
-        setTimeout(() => safeNavigation.navigate('/auth/login'), 100);
+        global.setTimeout(() => safeNavigation.navigate('/auth/login'), 100);
       } else if (userToken && inAuthGroup) {
         Logger.info('Redirecting to home screen');
-        setTimeout(() => safeNavigation.navigate('/'), 100);
+        global.setTimeout(() => safeNavigation.navigate('/'), 100);
       } else {
         Logger.info('No navigation redirect needed');
       }
@@ -482,7 +494,7 @@ function Auth() {
       Logger.error('Navigation effect error', e);
       setStartupError(e.message);
     }
-  }, [isLoading, userToken, segments]);
+  }, [isLoading, userToken, segments]); // Removed safeNavigation as it's a stable reference
 
   // Show initialization error screen
   if (initializationError) {
@@ -501,7 +513,7 @@ function Auth() {
             setInitializationError(null);
             setIsLoading(true);
             // Try again
-            setTimeout(() => setIsLoading(false), 1000);
+            global.setTimeout(() => setIsLoading(false), 1000);
           }}
         >
           <Text style={{ color: '#0A0F24', fontWeight: 'bold' }}>Retry</Text>
@@ -540,7 +552,7 @@ function Auth() {
             setStartupError(null);
             setIsLoading(true);
             // Try again
-            setTimeout(() => setIsLoading(false), 1000);
+            global.setTimeout(() => setIsLoading(false), 1000);
           }}
         >
           <Text style={{ color: '#0A0F24', fontWeight: 'bold' }}>Retry</Text>
@@ -561,7 +573,7 @@ function Auth() {
           <Text style={{ color: '#FFF', fontSize: 10 }}>SDK Version: 52</Text>
           <Text style={{ color: '#FFF', fontSize: 10 }}>Build: {new Date().toISOString()}</Text>
           <Text style={{ color: '#FFF', fontSize: 10 }}>
-            Status: {isAppReady ? 'Ready' : 'Initializing'} | Fonts: {fontsLoaded ? 'Loaded' : 'Loading'}
+            Status: {isAppReady ? 'Ready' : 'Initializing'} | Fonts: {_fontsLoaded ? 'Loaded' : 'Loading'}
           </Text>
         </View>
       </View>
@@ -586,9 +598,9 @@ function Auth() {
 
 export default function RootLayout() {
   // State for tracking font loading and app initialization
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [_fontsLoaded, setFontsLoaded] = useState(false);
   const [appIsReady, setAppIsReady] = useState(false);
-  const [initError, setInitError] = useState(null);
+  const [_initError, setInitError] = useState(null);
 
   // Load fonts and prepare the app
   useEffect(() => {
@@ -600,7 +612,7 @@ export default function RootLayout() {
         Sentry.addBreadcrumb({
           category: 'app.lifecycle',
           message: 'App preparation started',
-          level: Sentry.Severity.Info
+          level: 'info'
         });
         
         // Load fonts first
@@ -619,11 +631,11 @@ export default function RootLayout() {
         Sentry.addBreadcrumb({
           category: 'app.lifecycle',
           message: 'Fonts loaded successfully',
-          level: Sentry.Severity.Info
+          level: 'info'
         });
         
         // Artificial delay to ensure splash screen shows properly
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => global.setTimeout(resolve, 100));
         
         // Mark app as ready
         setAppIsReady(true);
@@ -633,7 +645,7 @@ export default function RootLayout() {
         Sentry.addBreadcrumb({
           category: 'app.lifecycle',
           message: 'App preparation complete',
-          level: Sentry.Severity.Info
+          level: 'info'
         });
       } catch (e) {
         Logger.error('Error preparing app:', e);
@@ -652,7 +664,7 @@ export default function RootLayout() {
     if (appIsReady) {
       Logger.info('App is ready, hiding splash screen');
       // Use a slight delay to ensure all rendering is complete
-      setTimeout(() => {
+      global.setTimeout(() => {
         SplashScreen.hideAsync().catch(e => {
           Logger.error('Error hiding splash screen:', e);
         });
@@ -704,7 +716,7 @@ export default function RootLayout() {
       Sentry.addBreadcrumb({
         category: 'app.state',
         message: `App State changed to: ${nextAppState}`,
-        level: Sentry.Severity.Info
+        level: 'info'
       });
     };
     

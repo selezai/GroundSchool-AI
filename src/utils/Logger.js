@@ -22,9 +22,12 @@ class Logger {
         
         // Try to load logs from localStorage instead of AsyncStorage on web
         try {
-          const storedLogs = localStorage.getItem(LOG_STORAGE_KEY);
-          if (storedLogs) {
-            this.logs = JSON.parse(storedLogs);
+          // Check if localStorage is available in this environment
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const storedLogs = window.localStorage.getItem(LOG_STORAGE_KEY);
+            if (storedLogs) {
+              this.logs = JSON.parse(storedLogs);
+            }
           }
         } catch (storageError) {
           // localStorage might be unavailable in some contexts
@@ -66,7 +69,13 @@ class Logger {
         level,
         message,
         error: error ? error.toString() : null,
-        stack: error?.stack || null
+        stack: error?.stack || null,
+        // Add more context for better debugging
+        context: {
+          platform: Platform.OS,
+          version: Platform.Version,
+          appVersion: '1.0.0' // This should be dynamically fetched from app config
+        }
       };
       
       // Add to memory logs
@@ -80,9 +89,11 @@ class Logger {
       // Platform-specific storage
       if (Platform.OS === 'web') {
         try {
-          // Use localStorage on web
-          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(this.logs));
-        } catch (storageError) {
+          // Use localStorage on web if available
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(this.logs));
+          }
+        } catch (_storageError) {
           // Silently fail if localStorage is not available
           console.warn('Could not write to localStorage');
         }
@@ -93,7 +104,8 @@ class Logger {
         // Write to file on native platforms
         if (this.logFile) {
           const logLine = `${timestamp} [${level}] ${message}${error ? ' - ' + error.toString() : ''}\n`;
-          await FileSystem.appendAsStringAsync(this.logFile, logLine);
+          // Use writeAsStringAsync with append option instead of appendAsStringAsync
+          await FileSystem.writeAsStringAsync(this.logFile, logLine, { append: true });
         }
       }
       
@@ -113,7 +125,12 @@ class Logger {
   }
 
   static error(message, error = null) {
-    this.log(message, 'ERROR', error);
+    // Ensure we always have an Error object for better stack traces
+    const errorObj = error instanceof Error ? error : error ? new Error(error.toString()) : new Error(message);
+    this.log(message, 'ERROR', errorObj);
+    
+    // Return the error for chaining
+    return errorObj;
   }
 
   static warn(message) {
@@ -138,15 +155,79 @@ class Logger {
   static async clearLogs() {
     try {
       this.logs = [];
-      await AsyncStorage.removeItem(LOG_STORAGE_KEY);
       
-      if (this.logFile) {
-        await FileSystem.writeAsStringAsync(this.logFile, '--- Logs Cleared ---\n');
+      // Platform-specific storage clearing
+      if (Platform.OS === 'web') {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem(LOG_STORAGE_KEY);
+          }
+        } catch (_storageError) {
+          console.warn('Could not clear localStorage');
+        }
+      } else {
+        await AsyncStorage.removeItem(LOG_STORAGE_KEY);
+        
+        if (this.logFile) {
+          await FileSystem.writeAsStringAsync(this.logFile, '--- Logs Cleared ---\n');
+        }
       }
       
       this.log('Logs cleared', 'INFO');
+      return true;
     } catch (e) {
       console.error('Failed to clear logs:', e);
+      return false;
+    }
+  }
+
+  // Helper method to get formatted logs for display
+  static getFormattedLogs() {
+    return this.logs.map(log => {
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      return `${time} [${log.level}] ${log.message}${log.error ? ' - ' + log.error : ''}`;
+    });
+  }
+  
+  // Export logs to a file (useful for support)
+  static async exportLogs() {
+    try {
+      const logContent = JSON.stringify(this.logs, null, 2);
+      
+      if (Platform.OS === 'web') {
+        // For web, create a downloadable file
+        try {
+          // Check if we're in a browser environment
+          if (typeof window !== 'undefined' && window.Blob && window.URL && window.document) {
+            const blob = new window.Blob([logContent], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = window.document.createElement('a');
+            a.href = url;
+            a.download = `app_logs_${new Date().toISOString()}.json`;
+            window.document.body.appendChild(a);
+            a.click();
+            window.document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            return true;
+          } else {
+            console.warn('Browser APIs not available for exporting logs');
+            return false;
+          }
+        } catch (browserError) {
+          console.error('Error using browser APIs:', browserError);
+          return false;
+        }
+      } else if (FileSystem) {
+        // For native, save to file system
+        const fileUri = `${FileSystem.documentDirectory}app_logs_export.json`;
+        await FileSystem.writeAsStringAsync(fileUri, logContent);
+        return fileUri;
+      }
+      
+      return false;
+    } catch (e) {
+      console.error('Failed to export logs:', e);
+      return false;
     }
   }
 }

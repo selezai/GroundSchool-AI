@@ -15,7 +15,7 @@ const createClient = () => {
 
     if (shouldRetry(error) && config._retryCount < MAX_RETRIES) {
       config._retryCount += 1;
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      await new Promise(resolve => global.setTimeout(resolve, RETRY_DELAY));
       return client(config);
     }
 

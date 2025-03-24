@@ -39,7 +39,7 @@ export default function LoginScreen() {
       
       // In a real implementation, this would call an authentication API
       // For now, we'll simulate a login
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => global.setTimeout(resolve, 1000));
       
       // Mock successful login
       const userData = {

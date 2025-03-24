@@ -1,4 +1,5 @@
-import apiClient from './apiClient';
+// apiClient import removed as it was unused
+// import apiClient from './apiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabaseClient';
 import { Platform } from 'react-native';
@@ -133,7 +134,7 @@ class QuizService {
               console.log(`Fetching file data from URI: ${safeFile.uri.substring(0, 50)}...`);
               const fetchPromise = fetch(safeFile.uri);
               const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('File fetch timed out')), 30000)
+                global.setTimeout(() => reject(new Error('File fetch timed out')), 30000)
               );
               
               const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -156,7 +157,7 @@ class QuizService {
             console.log(`Uploading file to Supabase: ${retryFileName}`);
             
             // Upload to storage bucket with better error handling
-            const { data: storageData, error: storageError } = await supabase.storage
+            const { /* data: storageData, */ error: storageError } = await supabase.storage
               .from('documents')
               .upload(retryFileName, blob, {
                 contentType: safeFile.type,
@@ -174,7 +175,7 @@ class QuizService {
               }
               
               // Wait before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => global.setTimeout(resolve, 1000));
             } else {
               // Success!
               fileName = retryFileName;
@@ -191,7 +192,7 @@ class QuizService {
             }
             
             // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => global.setTimeout(resolve, 1000));
           }
         }
         
@@ -309,7 +310,8 @@ class QuizService {
           const { generateQuestions } = require('../../lib/aiProcessing');
           
           // Generate questions based on the uploaded document
-          const generatedQuestions = await generateQuestions(fileName, {
+          // Use the document ID as a fallback if fileName is not available
+          const generatedQuestions = await generateQuestions(documentId, {
             questionCount: quizOptions.questionCount,
             difficulty: quizOptions.difficulty
           });
@@ -557,7 +559,7 @@ class QuizService {
         };
         
         return quiz;
-      } catch (apiError) {
+      } catch (_apiError) {
         console.log('Could not fetch quiz from API, trying local storage');
         
         // Fall back to local storage if API fails - try both sanitized and original IDs
@@ -656,7 +658,7 @@ class QuizService {
     
     try {
       // Get the quiz basic info first
-      const { data: quiz, error: quizError } = await supabase
+      const { /* data: quiz, */ error: quizError } = await supabase
         .from('quizzes')
         .select('*')
         .eq('id', sanitizedQuizId)

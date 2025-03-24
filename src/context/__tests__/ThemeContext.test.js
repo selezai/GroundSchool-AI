@@ -2,6 +2,8 @@
  * @jest-environment jsdom
  */
 
+/* global describe, it, expect */
+
 import React from 'react';
 import { render, renderHook } from '@testing-library/react';
 import renderer, { act } from 'react-test-renderer';

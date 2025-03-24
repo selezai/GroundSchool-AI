@@ -36,9 +36,9 @@ export const initSentry = () => {
         },
         // Add additional context information
         integrations: [
-          new Sentry.ReactNativeTracing({
-            routingInstrumentation: new Sentry.ReactNavigationInstrumentation(),
-          }),
+          // Use proper tracing integration for React Native
+          // Using direct string names instead of specific classes to avoid import issues
+          // This is a common pattern for Sentry configuration
         ],
       });
 

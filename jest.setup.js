@@ -1,5 +1,16 @@
 // Import Jest's globals first
-const { expect } = require('@jest/globals');
+const { expect, test, describe, it, beforeEach, afterEach, beforeAll, afterAll, jest } = require('@jest/globals');
+
+// Make Jest globals available in the global scope
+global.expect = expect;
+global.test = test;
+global.describe = describe;
+global.it = it;
+global.beforeEach = beforeEach;
+global.afterEach = afterEach;
+global.beforeAll = beforeAll;
+global.afterAll = afterAll;
+global.jest = jest;
 
 // Import the testing libraries for setup
 require('@testing-library/jest-native/extend-expect');

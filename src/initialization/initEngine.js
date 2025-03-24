@@ -43,8 +43,11 @@ const serviceInitializers = {
     try {
       // Test storage access
       if (Platform.OS === 'web') {
-        localStorage.setItem('STORAGE_TEST', 'true');
-        localStorage.removeItem('STORAGE_TEST');
+        // Check if localStorage is available in this environment
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem('STORAGE_TEST', 'true');
+          localStorage.removeItem('STORAGE_TEST');
+        }
       } else {
         await AsyncStorage.setItem('STORAGE_TEST', 'true');
         await AsyncStorage.removeItem('STORAGE_TEST');
@@ -138,7 +141,10 @@ const enterSafeMode = async (error) => {
     
     // Set safe mode flag
     if (Platform.OS === 'web') {
-      localStorage.setItem('APP_SAFE_MODE', 'true');
+      // Check if localStorage is available in this environment
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('APP_SAFE_MODE', 'true');
+      }
     } else {
       await AsyncStorage.setItem('APP_SAFE_MODE', 'true');
     }

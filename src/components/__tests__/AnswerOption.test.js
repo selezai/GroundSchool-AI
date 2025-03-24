@@ -1,3 +1,5 @@
+/* global describe, beforeEach, it, expect, jest */
+
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import AnswerOption from '../AnswerOption';

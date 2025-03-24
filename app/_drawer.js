@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Text, Alert, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Alert, Pressable } from 'react-native';
 import { Slot, router, useNavigation } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -199,7 +198,8 @@ function CustomDrawerContent(props) {
   );
 }
 
-// Extracted MenuItem component for cleaner code
+// Extracted MenuItem component used within CustomDrawerContent
+// ESLint-disable-next-line no-unused-vars
 function MenuItem({ label, icon, isActive = false, onPress }) {
   return (
     <Pressable
@@ -222,16 +222,19 @@ function MenuItem({ label, icon, isActive = false, onPress }) {
   );
 }
 
-// Header component with menu button - using SafeNavigationService
+// Header component with menu button - used within the drawer configuration
+// ESLint-disable-next-line no-unused-vars
 function HeaderLeft() {
   // Safe drawer open handler using SafeNavigationService
+  // Get navigation at the component level, not inside the callback
+  const navigation = useNavigation();
+  
   const handleOpenDrawer = React.useCallback(() => {
     try {
       if (global.safeNavigation) {
         global.safeNavigation.openDrawer();
       } else {
         // Fallback if SafeNavigationService is not available
-        const navigation = useNavigation();
         if (navigation?.openDrawer) {
           navigation.openDrawer();
         } else {
@@ -241,7 +244,7 @@ function HeaderLeft() {
     } catch (error) {
       Logger.error('HeaderLeft: Error opening drawer:', error);
     }
-  }, []);
+  }, [navigation]);
   
   return (
     <Pressable
@@ -267,16 +270,18 @@ export default function DrawerLayout() {
       global.safeNavigation.setDrawerNavigator(drawerRef.current);
       Logger.info('Drawer navigator registered with SafeNavigationService');
     }
-  }, [drawerRef.current]);
+  }, []);  // Remove drawerRef.current from dependencies, it's a mutable ref
   
   // Safe drawer open handler using SafeNavigationService
+  // Get navigation at the component level, not inside the callback
+  const navigation = useNavigation();
+  
   const handleOpenDrawer = React.useCallback(() => {
     try {
       if (global.safeNavigation) {
         global.safeNavigation.openDrawer();
       } else {
         // Fallback if SafeNavigationService is not available
-        const navigation = useNavigation();
         if (navigation?.openDrawer) {
           navigation.openDrawer();
         }
@@ -284,7 +289,7 @@ export default function DrawerLayout() {
     } catch (error) {
       Logger.error('Error opening drawer:', error);
     }
-  }, []);
+  }, [navigation]);
   
   return (
     <Drawer.Navigator
