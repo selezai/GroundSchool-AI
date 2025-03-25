@@ -22,6 +22,10 @@ class AuthService {
    */
   async login(email, password) {
     try {
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -29,19 +33,35 @@ class AuthService {
       
       if (error) throw error;
       
+      // Validate response data
+      if (!data || !data.user) {
+        throw new Error('Invalid response from authentication service');
+      }
+      
       // Store auth token and user data
       if (data.session) {
-        await AsyncStorage.setItem('userToken', data.session.access_token);
-        await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+        try {
+          await AsyncStorage.setItem('userToken', data.session.access_token);
+          await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+        } catch (storageError) {
+          console.error('Failed to store auth data:', storageError);
+          // Continue despite storage error - user is still authenticated
+        }
+      } else {
+        console.warn('Login successful but no session was returned');
       }
       
       return {
         user: data.user,
-        token: data.session?.access_token
+        token: data.session?.access_token || null
       };
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      // Rethrow with a more user-friendly message but preserve original error
+      const userMessage = 'Failed to sign in. Please check your credentials and try again.';
+      const enhancedError = new Error(userMessage);
+      enhancedError.originalError = error;
+      throw enhancedError;
     }
   }
   

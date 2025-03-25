@@ -18,7 +18,10 @@ export default ({ config }) => {
     
     // Ensure we preserve all config structures
     ios: config.ios,
-    android: config.android,
+    android: {
+      ...config.android,
+      package: "com.selezai.groundschoolai"
+    },
     web: config.web,
     plugins: config.plugins,
     
@@ -44,7 +47,11 @@ export default ({ config }) => {
       isPreviewBuild: environment === 'preview',
       isDevelopmentBuild: environment === 'development',
       isExpoGo: false, // Will be true only in Expo Go
+      
+      // Add EAS project ID
+      eas: {
+        projectId: "1618f683-148e-4c3a-beb5-a6114f1d72f6"
+      }
     }
   };
 };
-

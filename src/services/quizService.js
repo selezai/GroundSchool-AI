@@ -3,6 +3,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabaseClient';
 import { Platform } from 'react-native';
+import Logger from '../utils/Logger';
+import * as Sentry from '@sentry/node';
 
 // Define UUID regex pattern as a constant for better performance
 // Modified to support variable-length last segments (at least 12 chars)
@@ -16,7 +18,7 @@ const UUID_REGEX = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const sanitizeQuizId = (quizId) => {
   if (!quizId) return quizId;
   
-  console.log(`Original quizId: '${quizId}'`);
+  Logger.debug(`Original quizId: '${quizId}'`);
   
   // Handle undefined or null as strings
   if (quizId === 'undefined' || quizId === 'null') {
@@ -30,7 +32,7 @@ const sanitizeQuizId = (quizId) => {
   // First, try direct suffix removal
   let cleanId = trimmedOriginal.replace(/(-quiz|_quiz|quiz)$/i, '');
   if (cleanId !== trimmedOriginal) {
-    console.log(`Removed suffix, new ID: '${cleanId}'`);
+    Logger.debug(`Removed suffix, new ID: '${cleanId}'`);
   }
   
   // Extract UUID if present anywhere in the string
@@ -38,7 +40,7 @@ const sanitizeQuizId = (quizId) => {
   if (match && match[1]) {
     const extractedUuid = match[1];
     if (extractedUuid !== cleanId) {
-      console.log(`✅ Extracted UUID: '${extractedUuid}'`);
+      Logger.debug(`Extracted UUID: '${extractedUuid}'`);
       cleanId = extractedUuid;
     }
   } else if (cleanId.includes('-')) {
@@ -56,7 +58,7 @@ const sanitizeQuizId = (quizId) => {
       
       // Check if it passes our modified UUID pattern
       if (UUID_REGEX.test(reconstructedUuid)) {
-        console.log(`🔧 Manually reconstructed UUID: '${reconstructedUuid}'`);
+        Logger.debug(`Manually reconstructed UUID: '${reconstructedUuid}'`);
         cleanId = reconstructedUuid;
       }
     }
@@ -65,7 +67,7 @@ const sanitizeQuizId = (quizId) => {
   // Validate the final ID - if it's not a valid UUID, log an error
   // but don't throw an error to maintain backward compatibility
   if (cleanId && !UUID_REGEX.test(cleanId)) {
-    console.error(`❌ Warning: Sanitized ID is not a valid UUID: '${cleanId}'`);
+    Logger.warn(`Sanitized ID is not a valid UUID: '${cleanId}'`);
     // We'll return it anyway but log the warning
   }
   
@@ -83,13 +85,23 @@ class QuizService {
    * @returns {Promise<Object>} - Generated quiz data
    */
   async generateQuiz(file, options = {}) {
+    const transaction = Sentry.startTransaction({
+      name: 'generateQuiz',
+      op: 'quiz.generation'
+    });
+    Sentry.setContext('generateQuiz', {
+      file: file ? file.name : 'undefined',
+      options
+    });
     try {
-      console.log('Starting quiz generation with file:', file ? file.name : 'undefined');
+      Logger.info(`Starting quiz generation with file: ${file ? file.name : 'undefined'}`);
       
       // Validate input parameters to prevent crashes
       if (!file || !file.uri) {
-        console.error('Invalid file object provided');
-        throw new Error('Invalid file: File object is required');
+        const error = new Error('Invalid file: File object is required');
+        Sentry.captureException(error);
+        Logger.error('Invalid file object provided', error);
+        throw error;
       }
       
       // Ensure file has all required properties with fallbacks
@@ -112,7 +124,7 @@ class QuizService {
       
       // If no document ID was provided, we need to create a document record first
       if (!documentId) {
-        console.log('No document ID provided, creating new document');
+        Logger.info('No document ID provided, creating new document');
         
         // Handle filenames with multiple dots properly
         const nameParts = safeFile.name.split('.');
@@ -131,21 +143,31 @@ class QuizService {
             // Attempt to get blob with timeout and error handling
             let blob;
             try {
-              console.log(`Fetching file data from URI: ${safeFile.uri.substring(0, 50)}...`);
+              Logger.info(`Fetching file data from URI: ${safeFile.uri.substring(0, 50)}...`);
               const fetchPromise = fetch(safeFile.uri);
-              const timeoutPromise = new Promise((_, reject) => 
-                global.setTimeout(() => reject(new Error('File fetch timed out')), 30000)
-              );
+              
+              // Use a safer timeout pattern with clear cleanup
+              let timeoutId;
+              const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = global.setTimeout(() => {
+                  reject(new Error('File fetch timed out after 30 seconds'));
+                }, 30000);
+              });
               
               const response = await Promise.race([fetchPromise, timeoutPromise]);
+              // Clear the timeout to prevent memory leaks
+              if (timeoutId) global.clearTimeout(timeoutId);
+              
               if (!response.ok) {
-                throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+                const error = new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+                Logger.error('File fetch failed with HTTP error', error);
+                throw error;
               }
               
               blob = await response.blob();
-              console.log(`Successfully fetched file blob, size: ${blob.size} bytes`);
+              Logger.info(`Successfully fetched file blob, size: ${blob.size} bytes`);
             } catch (fetchError) {
-              console.error('Error fetching file blob:', fetchError);
+              Logger.error('Error fetching file blob', fetchError);
               throw new Error(`Failed to access file: ${fetchError.message}`);
             }
             
@@ -154,7 +176,7 @@ class QuizService {
               `${Date.now()}_retry${retryCount}_${sanitizedName}` : 
               fileName;
               
-            console.log(`Uploading file to Supabase: ${retryFileName}`);
+            Logger.info(`Uploading file to Supabase: ${retryFileName}`);
             
             // Upload to storage bucket with better error handling
             const { /* data: storageData, */ error: storageError } = await supabase.storage
@@ -166,7 +188,7 @@ class QuizService {
               });
             
             if (storageError) {
-              console.error(`Storage upload error (attempt ${retryCount + 1}):`, storageError);
+              Logger.error(`Storage upload error (attempt ${retryCount + 1})`, storageError);
               retryCount++;
               
               // If it's not a duplicate error or we're out of retries, throw it
@@ -174,31 +196,53 @@ class QuizService {
                 throw storageError;
               }
               
-              // Wait before retrying
-              await new Promise(resolve => global.setTimeout(resolve, 1000));
+              // Wait before retrying with exponential backoff and jitter
+              const baseDelay = 1000; // 1 second base
+              const maxDelay = 10000; // 10 seconds max
+              const exponentialDelay = Math.min(
+                maxDelay,
+                baseDelay * Math.pow(2, retryCount - 1)
+              );
+              // Add jitter to prevent thundering herd problem
+              const jitter = Math.random() * 0.3 * exponentialDelay;
+              const delay = exponentialDelay + jitter;
+              
+              Logger.info(`Retrying upload in ${Math.round(delay/1000)} seconds...`);
+              await new Promise(resolve => global.setTimeout(resolve, delay));
             } else {
               // Success!
               fileName = retryFileName;
               uploadSuccess = true;
-              console.log('File uploaded successfully:', fileName);
+              Logger.info(`File uploaded successfully: ${fileName}`);
             }
           } catch (uploadError) {
             retryCount++;
-            console.error(`File upload attempt ${retryCount} failed:`, uploadError);
+            Logger.error(`File upload attempt ${retryCount} failed`, uploadError);
             
             if (retryCount >= maxRetries) {
-              console.error('Maximum upload retries reached, failing');
+              Logger.error('Maximum upload retries reached, failing');
               throw new Error(`File upload failed after ${maxRetries} attempts: ${uploadError.message}`);
             }
             
-            // Wait before retrying
-            await new Promise(resolve => global.setTimeout(resolve, 1000));
+            // Wait before retrying with exponential backoff
+            const baseDelay = 1000; // 1 second base
+            const maxDelay = 10000; // 10 seconds max
+            const exponentialDelay = Math.min(
+              maxDelay,
+              baseDelay * Math.pow(2, retryCount - 1)
+            );
+            // Add jitter to prevent thundering herd problem
+            const jitter = Math.random() * 0.3 * exponentialDelay;
+            const delay = exponentialDelay + jitter;
+            
+            Logger.info(`Retrying upload in ${Math.round(delay/1000)} seconds...`);
+            await new Promise(resolve => global.setTimeout(resolve, delay));
           }
         }
         
         // Safe document creation with retries
         try {
-          console.log('Creating document record in database');
+          Logger.info('Creating document record in database');
           
           // Get user ID safely
           let userId;
@@ -207,11 +251,11 @@ class QuizService {
             userId = userResponse?.data?.user?.id;
             
             if (!userId) {
-              console.warn('Unable to get user ID, using placeholder');
+              Logger.warn('Unable to get user ID, using placeholder');
               userId = 'anonymous'; // Fallback if we can't get user ID
             }
           } catch (userError) {
-            console.error('Error getting user ID:', userError);
+            Logger.error('Error getting user ID', userError);
             userId = 'anonymous'; // Fallback
           }
           
@@ -233,25 +277,27 @@ class QuizService {
             .select();
             
           if (documentError) {
-            console.error('Document record error:', documentError);
+            Logger.error('Document record error', documentError);
             throw new Error(`Failed to create document record: ${documentError.message}`);
           }
           
           if (!documentRecord || documentRecord.length === 0) {
-            throw new Error('Document record creation failed: No record returned');
+            const error = new Error('Document record creation failed: No record returned');
+            Logger.error('Document creation returned empty result', error);
+            throw error;
           }
           
           // Use the new document ID
           documentId = documentRecord[0].id;
-          console.log('Document record created successfully, ID:', documentId);
+          Logger.info(`Document record created successfully, ID: ${documentId}`);
         } catch (docError) {
-          console.error('Error creating document record:', docError);
+          Logger.error('Error creating document record', docError);
           throw new Error(`Document creation failed: ${docError.message}`);
         }
       }
       
       // Create quiz record in database with better title handling
-      console.log('Creating quiz record for document ID:', documentId);
+      Logger.info(`Creating quiz record for document ID: ${documentId}`);
       
       // Handle potential edge cases with file names
       const nameParts = file?.name ? file.name.split('.') : ['Unknown_File'];
@@ -265,16 +311,16 @@ class QuizService {
         userId = userResponse?.data?.user?.id;
         
         if (!userId) {
-          console.warn('User not authenticated, using anonymous user');
+          Logger.warn('User not authenticated, using anonymous user');
           userId = 'anonymous'; // Fallback if we can't get user ID
         }
       } catch (userError) {
-        console.error('Error getting user ID:', userError);
+        Logger.error('Error getting user ID for quiz creation', userError);
         userId = 'anonymous'; // Fallback
       }
       
       try {
-        console.log('Preparing quiz data for insertion');
+        Logger.info('Preparing quiz data for insertion');
         const quizData = {
           title: `Quiz on ${safeTitle}`,
           document_id: documentId,  // Use the document ID reference
@@ -284,25 +330,27 @@ class QuizService {
           user_id: userId
         };
         
-        console.log('Inserting quiz record');
+        Logger.info('Inserting quiz record');
         const { data: quizRecord, error: quizError } = await supabase
           .from('quizzes')
           .insert(quizData)
           .select();
           
         if (quizError) {
-          console.error('Quiz insertion error:', quizError);
+          Logger.error('Quiz insertion error', quizError);
           throw new Error(`Failed to insert quiz: ${quizError.message}`);
         }
         
         if (!quizRecord || quizRecord.length === 0) {
-          throw new Error('Quiz record creation failed: No record returned');
+          const error = new Error('Quiz record creation failed: No record returned');
+          Logger.error('Quiz creation returned empty result', error);
+          throw error;
         }
         
-        console.log('Quiz record created successfully, ID:', quizRecord[0].id);
+        Logger.info(`Quiz record created successfully, ID: ${quizRecord[0].id}`);
       
         // Generate questions using DeepSeek AI
-        console.log('Generating questions using DeepSeek AI for document:', documentId);
+        Logger.info(`Generating questions using DeepSeek AI for document: ${documentId}`);
         
         let response;
         try {
@@ -316,11 +364,11 @@ class QuizService {
             difficulty: quizOptions.difficulty
           });
           
-          console.log(`Successfully generated ${generatedQuestions.length} questions with AI`);
+          Logger.info(`Successfully generated ${generatedQuestions.length} questions with AI`);
           
           // Save questions to the database
           if (generatedQuestions && generatedQuestions.length > 0) {
-            console.log('Saving generated questions to database');
+            Logger.info('Saving generated questions to database');
             
             // Insert questions into the questions table
             for (const question of generatedQuestions) {
@@ -338,7 +386,12 @@ class QuizService {
                   .select();
                   
                 if (questionError) {
-                  console.error('Error inserting question:', questionError);
+                  Logger.error('Error inserting question', questionError);
+                  continue;
+                }
+                
+                if (!questionData || questionData.length === 0) {
+                  Logger.warn('Question insert returned no data, skipping options');
                   continue;
                 }
                 
@@ -356,7 +409,7 @@ class QuizService {
                     });
                     
                   if (optionError) {
-                    console.error('Error inserting option:', optionError);
+                    Logger.error('Error inserting option', optionError);
                   }
                 }
                 
@@ -370,10 +423,10 @@ class QuizService {
                   });
                   
                 if (linkError) {
-                  console.error('Error linking question to quiz:', linkError);
+                  Logger.error('Error linking question to quiz', linkError);
                 }
               } catch (questionInsertError) {
-                console.error('Error processing question:', questionInsertError);
+                Logger.error('Error processing question', questionInsertError);
                 // Continue with other questions
               }
             }
@@ -390,7 +443,18 @@ class QuizService {
             }
           };
         } catch (aiError) {
-          console.error('AI question generation error:', aiError);
+          Logger.error('AI question generation error', aiError);
+          
+          // Update quiz status to reflect the error
+          try {
+            await supabase
+              .from('quizzes')
+              .update({ status: 'error' })
+              .eq('id', quizRecord[0].id);
+            Logger.info(`Updated quiz status to 'error' for quiz ID: ${quizRecord[0].id}`);
+          } catch (statusUpdateError) {
+            Logger.error('Failed to update quiz status after AI error', statusUpdateError);
+          }
           
           // Fallback to returning an empty quiz if AI generation fails
           response = {
@@ -399,31 +463,48 @@ class QuizService {
               title: quizRecord[0].title,
               documentId: documentId,
               createdAt: quizRecord[0].created_at,
-              questions: [] // Empty questions array as fallback
+              questions: [], // Empty questions array as fallback
+              error: aiError.message || 'Failed to generate questions'
             }
           };
         }
         
         // Store quiz in local storage for offline access
         try {
-          console.log('Saving quiz to local storage');
+          Logger.info('Saving quiz to local storage');
           if (response.quiz && response.quiz.id) {
             await this.saveQuizToStorage(response.quiz);
           }
         } catch (storageError) {
-          console.warn('Failed to save quiz to local storage:', storageError);
+          Logger.warn('Failed to save quiz to local storage', storageError);
           // Continue even if local storage fails
         }
         
-        console.log('Quiz generation complete, returning response');
+        // Update quiz status to completed if we have questions
+        if (response.quiz && response.quiz.questions && response.quiz.questions.length > 0) {
+          try {
+            await supabase
+              .from('quizzes')
+              .update({ status: 'completed' })
+              .eq('id', quizRecord[0].id);
+            Logger.info(`Updated quiz status to 'completed' for quiz ID: ${quizRecord[0].id}`);
+          } catch (statusUpdateError) {
+            Logger.error('Failed to update quiz status to completed', statusUpdateError);
+          }
+        }
+        
+        Logger.info('Quiz generation complete, returning response');
         return response;
       } catch (quizCreationError) {
-        console.error('Quiz creation error:', quizCreationError);
+        Logger.error('Quiz creation error', quizCreationError);
         throw quizCreationError;
       }
     } catch (error) {
-      console.error('Quiz generation error:', error);
+      Sentry.captureException(error);
+      Logger.error('Quiz generation error', error);
       throw error;
+    } finally {
+      transaction.finish();
     }
   }
   
@@ -433,148 +514,168 @@ class QuizService {
    * @returns {Promise<Object>} - Quiz data
    */
   async getQuiz(quizId) {
-    if (!quizId) {
-      console.error('getQuiz called with invalid quizId:', quizId);
-      throw new Error('Quiz ID is required');
-    }
-    
-    // Sanitize the quiz ID to ensure it's a valid UUID for Supabase
-    const sanitizedQuizId = sanitizeQuizId(quizId);
-    console.log('Getting quiz with ID:', quizId, '(sanitized to:', sanitizedQuizId, ')');
-    
-    // Store the original ID for local storage lookups
-    const originalQuizId = quizId;
-    
+    const transaction = Sentry.startTransaction({
+      name: 'getQuiz',
+      op: 'quiz.retrieval'
+    });
+    Sentry.setContext('getQuiz', { quizId });
     try {
-      // Try to get from local storage first as a fallback
-      let localQuiz = null;
-      try {
-        localQuiz = await this.getQuizFromStorage(quizId);
-        if (localQuiz) {
-          console.log('Found quiz in local storage');
-        }
-      } catch (storageError) {
-        console.warn('Error checking local storage:', storageError);
-        // Continue even if local storage fails
+      if (!quizId) {
+        const error = new Error('Quiz ID is required');
+        Sentry.captureException(error);
+        Logger.error('getQuiz called with invalid quizId', { quizId, error });
+        throw error;
       }
       
-      // Try to get from Supabase
-      try {
-        console.log('Fetching quiz from Supabase with sanitized ID:', sanitizedQuizId);
-        // First get basic quiz information
-        const { data, error } = await supabase
-          .from('quizzes')
-          .select('*')
-          .eq('id', sanitizedQuizId)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching quiz from Supabase:', error);
-          // If we have a local version, use that instead
-          if (localQuiz) {
-            console.log('Using local quiz data as fallback');
-            return localQuiz;
-          }
-          throw error;
-        }
-        
-        // Now fetch the questions through the quiz_questions junction table
-        const { data: quizQuestionsData, error: questionsError } = await supabase
-          .from('quiz_questions')
-          .select(`
-            id,
-            user_answer,
-            is_correct,
-            question:question_id(*)
-          `)
-          .eq('quiz_id', sanitizedQuizId);
-          
-        if (questionsError) {
-          console.error('Error fetching quiz questions:', questionsError);
-          // Continue with available data
-        }
-        
-        // Transform the junction table data into the expected questions format
-        const questions = [];
-        if (quizQuestionsData && Array.isArray(quizQuestionsData)) {
-          quizQuestionsData.forEach(item => {
-            if (item.question) {
-              questions.push({
-                id: item.question.id,
-                questionText: item.question.question_text,
-                questionNumber: item.question.question_number,
-                options: item.question.options || [],
-                correctAnswer: item.question.correct_answer,
-                category: item.question.category,
-                difficulty: item.question.difficulty,
-                explanation: item.question.explanation,
-                userAnswer: item.user_answer,
-                isCorrect: item.is_correct
-              });
-            }
-          });
-        }
-        
-        console.log('Quiz data retrieved successfully');
-        
-        // Transform to expected format
-        // Get document info if available
-        let documentUrl = null;
-        if (data.document_id) {
-          console.log('Fetching document information');
-          try {
-            const { data: document } = await supabase
-              .from('documents')
-              .select('file_path')
-              .eq('id', data.document_id)
-              .single();
-            
-            if (document?.file_path) {
-              try {
-                const { data: publicUrlData } = supabase.storage
-                  .from('documents')
-                  .getPublicUrl(document.file_path);
-                documentUrl = publicUrlData?.publicUrl;
-                console.log('Retrieved document URL:', documentUrl ? 'success' : 'null');
-              } catch (urlError) {
-                console.error('Error getting document URL:', urlError);
-                // Continue without document URL
-              }
-            }
-          } catch (docError) {
-            console.error('Error fetching document information:', docError);
-            // Continue without document information
-          }
-        }
-        
-        const quiz = {
-          id: data.id,
-          title: data.title,
-          documentId: data.document_id,
-          documentUrl: documentUrl,
-          createdAt: data.created_at,
-          status: data.status,
-          score: data.score,
-          questions: questions || []
-        };
-        
-        return quiz;
-      } catch (_apiError) {
-        console.log('Could not fetch quiz from API, trying local storage');
-        
-        // Fall back to local storage if API fails - try both sanitized and original IDs
-        let quiz = await this.getQuizFromStorage(sanitizedQuizId);
-        if (!quiz && originalQuizId !== sanitizedQuizId) {
-          quiz = await this.getQuizFromStorage(originalQuizId);
-        }
-        if (!quiz) {
-          throw new Error('Quiz not found');
-        }
-        return quiz;
+      // Sanitize the quiz ID to ensure it's a valid UUID for Supabase
+      const sanitizedQuizId = sanitizeQuizId(quizId);
+      Logger.info(`Getting quiz with ID: ${quizId} (sanitized to: ${sanitizedQuizId})`);
+      
+      // Add validation for sanitized ID
+      if (!sanitizedQuizId) {
+        const error = new Error('Failed to sanitize Quiz ID');
+        Sentry.captureException(error);
+        Logger.error('Quiz ID sanitization failed', { quizId, error });
+        throw error;
       }
-    } catch (error) {
-      console.error('Get quiz error:', error);
-      throw error;
+      
+      // Store the original ID for local storage lookups
+      const originalQuizId = quizId;
+      
+      try {
+        // Try to get from local storage first as a fallback
+        let localQuiz = null;
+        try {
+          localQuiz = await this.getQuizFromStorage(quizId);
+          if (localQuiz) {
+            Logger.info('Found quiz in local storage');
+          }
+        } catch (storageError) {
+          Logger.warn('Error checking local storage', storageError);
+          // Continue even if local storage fails
+        }
+        
+        // Try to get from Supabase
+        try {
+          Logger.info(`Fetching quiz from Supabase with sanitized ID: ${sanitizedQuizId}`);
+          // First get basic quiz information
+          const { data, error } = await supabase
+            .from('quizzes')
+            .select('*')
+            .eq('id', sanitizedQuizId)
+            .single();
+          
+          if (error) {
+            Logger.error('Error fetching quiz from Supabase', error);
+            // If we have a local version, use that instead
+            if (localQuiz) {
+              Logger.info('Using local quiz data as fallback');
+              return localQuiz;
+            }
+            throw error;
+          }
+          
+          // Now fetch the questions through the quiz_questions junction table
+          const { data: quizQuestionsData, error: questionsError } = await supabase
+            .from('quiz_questions')
+            .select(`
+              id,
+              user_answer,
+              is_correct,
+              question:question_id(*)
+            `)
+            .eq('quiz_id', sanitizedQuizId);
+            
+          if (questionsError) {
+            Logger.error('Error fetching quiz questions', questionsError);
+            // Continue with available data
+          }
+          
+          // Transform the junction table data into the expected questions format
+          const questions = [];
+          if (quizQuestionsData && Array.isArray(quizQuestionsData)) {
+            quizQuestionsData.forEach(item => {
+              if (item.question) {
+                questions.push({
+                  id: item.question.id,
+                  questionText: item.question.question_text,
+                  questionNumber: item.question.question_number,
+                  options: item.question.options || [],
+                  correctAnswer: item.question.correct_answer,
+                  category: item.question.category,
+                  difficulty: item.question.difficulty,
+                  explanation: item.question.explanation,
+                  userAnswer: item.user_answer,
+                  isCorrect: item.is_correct
+                });
+              }
+            });
+          }
+          
+          Logger.info('Quiz data retrieved successfully');
+          
+          // Transform to expected format
+          // Get document info if available
+          let documentUrl = null;
+          if (data.document_id) {
+            Logger.info(`Fetching document information for document ID: ${data.document_id}`);
+            try {
+              const { data: document } = await supabase
+                .from('documents')
+                .select('file_path')
+                .eq('id', data.document_id)
+                .single();
+              
+              if (document?.file_path) {
+                try {
+                  const { data: publicUrlData } = supabase.storage
+                    .from('documents')
+                    .getPublicUrl(document.file_path);
+                  documentUrl = publicUrlData?.publicUrl;
+                  console.log('Retrieved document URL:', documentUrl ? 'success' : 'null');
+                } catch (urlError) {
+                  console.error('Error getting document URL:', urlError);
+                  // Continue without document URL
+                }
+              }
+            } catch (docError) {
+              console.error('Error fetching document information:', docError);
+              // Continue without document information
+            }
+          }
+          
+          const quiz = {
+            id: data.id,
+            title: data.title,
+            documentId: data.document_id,
+            documentUrl: documentUrl,
+            createdAt: data.created_at,
+            status: data.status,
+            score: data.score,
+            questions: questions || []
+          };
+          
+          return quiz;
+        } catch (_apiError) {
+          console.log('Could not fetch quiz from API, trying local storage');
+          
+          // Fall back to local storage if API fails - try both sanitized and original IDs
+          let quiz = await this.getQuizFromStorage(sanitizedQuizId);
+          if (!quiz && originalQuizId !== sanitizedQuizId) {
+            quiz = await this.getQuizFromStorage(originalQuizId);
+          }
+          if (!quiz) {
+            throw new Error('Quiz not found');
+          }
+          return quiz;
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+        console.error('Get quiz error:', error);
+        throw error;
+      } finally {
+        transaction.finish();
+      }
     }
   }
   
@@ -799,6 +900,7 @@ class QuizService {
       
       return response;
     } catch (error) {
+      Sentry.captureException(error);
       console.error('Submit quiz error:', error);
       
       // If API fails, calculate results locally
@@ -926,6 +1028,7 @@ class QuizService {
         limit
       };
     } catch (error) {
+      Sentry.captureException(error);
       console.error('Get quiz history error:', error);
       
       // Fall back to local storage if API fails
@@ -1003,6 +1106,7 @@ class QuizService {
         console.error('Error saving quiz data:', saveError);
       }
     } catch (error) {
+      Sentry.captureException(error);
       console.error('Save quiz to storage error:', error);
       // Don't throw errors from storage operations
     }
@@ -1040,6 +1144,7 @@ class QuizService {
         return null;
       }
     } catch (error) {
+      Sentry.captureException(error);
       console.error('Get quiz from storage error:', error);
       return null;
     }
@@ -1077,6 +1182,7 @@ class QuizService {
       
       await AsyncStorage.setItem('quizHistory', JSON.stringify(history));
     } catch (error) {
+      Sentry.captureException(error);
       console.error('Save results to storage error:', error);
     }
   }
@@ -1091,6 +1197,7 @@ class QuizService {
       const resultsString = await AsyncStorage.getItem(`results_${quizId}`);
       return resultsString ? JSON.parse(resultsString) : null;
     } catch (error) {
+      Sentry.captureException(error);
       console.error('Get results from storage error:', error);
       return null;
     }
