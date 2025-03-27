@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'app.json'
+      - 'app.config.js'
+      - 'eas.json'
+      - '.github/workflows/expo-build.yml'
+      - 'android/**'
+      - 'ios/**'
   workflow_dispatch:  # Add manual trigger
 
 jobs:
@@ -25,7 +32,12 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Configure EAS
-        run: echo ${{ secrets.EAS_TOKEN }} | eas login
+        run: |
+          # Create .eas/credentials.json file with token
+          mkdir -p ~/.eas
+          echo '{"auth": {"token": "${{ secrets.EAS_TOKEN }}"}}' > ~/.eas/credentials.json
+          # Verify credentials
+          eas whoami
 
       - name: Validate EAS Configuration
         run: eas diagnostics
