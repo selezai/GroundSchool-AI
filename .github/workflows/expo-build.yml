@@ -25,7 +25,7 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Configure EAS
-        run: eas login --token ${{ secrets.EAS_TOKEN }}
+        run: echo ${{ secrets.EAS_TOKEN }} | eas login
 
       - name: Validate EAS Configuration
         run: eas diagnostics
