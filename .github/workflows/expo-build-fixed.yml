@@ -31,16 +31,9 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Configure EAS
-        run: |
-          # Create .eas/credentials.json file with token
-          mkdir -p ~/.eas
-          echo '{"auth": {"token": "${{ secrets.EAS_TOKEN }}"}}' > ~/.eas/credentials.json
-          # Verify credentials
-          eas whoami
-
-      - name: Validate EAS Configuration
-        run: eas diagnostics
+      # Skip EAS authentication since we're not building anything yet
+      - name: Skip EAS Authentication
+        run: echo "Skipping EAS authentication since we're not building anything yet"
         
       - name: Prepare Build (without executing)
         run: echo "Build preparation complete. Skipping actual build due to EAS quota limitations."
