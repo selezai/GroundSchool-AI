@@ -1,11 +1,8 @@
 name: SonarCloud Analysis
 
 on:
-  push:
-    branches: [ main, expo-upgrade ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allow manual triggering
+  # Only run when manually triggered
+  workflow_dispatch:
 
 jobs:
   sonarcloud:
