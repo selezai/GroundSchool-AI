@@ -1,10 +1,7 @@
 name: Build
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened]
+  # Only run when manually triggered
+  workflow_dispatch:
 jobs:
   sonarqube:
     name: SonarQube
@@ -20,4 +17,4 @@ jobs:
           args: -Dsonar.projectKey=groundschool-ai
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: https://${{ secrets.SONAR_HOST_URL || 'sonarcloud.io' }}
