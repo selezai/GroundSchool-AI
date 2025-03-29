@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`AnswerOption Component renders correctly in default state 1`] = `null`;
-
-exports[`AnswerOption Component renders correctly when selected 1`] = `null`;
-
-exports[`AnswerOption Component renders correctly when showing correct answer 1`] = `null`;
-
-exports[`AnswerOption Component renders correctly when showing incorrect answer 1`] = `null`;

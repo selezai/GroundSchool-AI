@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Button Component applies custom styles 1`] = `null`;
-
-exports[`Button Component handles disabled state 1`] = `null`;
-
-exports[`Button Component renders correctly 1`] = `null`;
-
-exports[`Button Component renders with different titles 1`] = `null`;

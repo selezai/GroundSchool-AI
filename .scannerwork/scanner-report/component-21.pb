@@ -1,1 +1,0 @@
- 2jsXhr(src/components/__mocks__/react-native.js
